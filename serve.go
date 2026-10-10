@@ -45,6 +45,13 @@ func runServe(args []string) error {
 		return err
 	}
 	o.Root, o.Scopes = root, scopes
+	cfg, _, err := loadConfig(root)
+	if err != nil {
+		return err
+	}
+	if cfg != nil {
+		cfg.apply(&o, setFlags(fs))
+	}
 	setTokenizer(o.Tokenizer)
 	abs, err := filepath.Abs(o.Root)
 	if err != nil {

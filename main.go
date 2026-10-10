@@ -22,7 +22,7 @@ func main() {
 	cmd := "pack"
 	if len(args) > 0 {
 		switch args[0] {
-		case "pack", "serve", "ui", "apply", "undo", "version", "help", "prompts":
+		case "pack", "serve", "ui", "apply", "undo", "version", "help", "prompts", "init":
 			cmd, args = args[0], args[1:]
 		case "-h", "--help", "-help":
 			cmd = "help"
@@ -38,6 +38,8 @@ func main() {
 		err = runServe(args)
 	case "apply":
 		err = runApply(args)
+	case "init":
+		err = runInit(args)
 	case "undo":
 		err = runApply(append([]string{"--undo"}, args...))
 	case "prompts":
@@ -62,6 +64,7 @@ USAGE
   ctxpack ui [path]                  open the visual file picker in your browser
   ctxpack apply [file|-]             write files from an AI response into the project
   ctxpack undo                       undo the last apply
+  ctxpack init                       create ctxpack.json with project settings
   ctxpack prompts                    list built-in prompt templates
 
 COMMON
@@ -101,6 +104,7 @@ PACK FLAGS
       --no-gitignore       do not read .gitignore files
       --keep-noise         keep config files like .gitignore, LICENSE, .prettierrc
       --no-cache           do not reuse token counts from the last run
+      --no-config          ignore ctxpack.json
       --no-default-ignore  do not use built-in ignore rules and presets
       --no-security        do not redact secrets
       --tokenizer NAME     o200k_base (default) | cl100k_base
@@ -268,18 +272,13 @@ func runPack(args []string) error {
 	fs.BoolVar(&o.NoTree, "no-tree", false, "")
 	fs.BoolVar(&o.KeepNoise, "keep-noise", false, "")
 	fs.BoolVar(&o.NoCache, "no-cache", false, "")
+	var noConfig bool
+	fs.BoolVar(&noConfig, "no-config", false, "")
 	if err := parseFlags(fs, args); err != nil {
 		return err
 	}
 	o.Include, o.Ignore, o.Entries = include, ignore, entries
 	o.Budget, o.Split = int(budget), int(split)
-	o.Format = strings.ToLower(o.Format)
-	switch o.Format {
-	case "xml", "md", "markdown", "txt", "plain", "text", "json":
-	default:
-		return fmt.Errorf("unknown format %q (use xml, md, json or txt)", o.Format)
-	}
-	setTokenizer(o.Tokenizer)
 
 	logf := func(format string, a ...any) {
 		if !o.Quiet {
@@ -315,7 +314,24 @@ func runPack(args []string) error {
 			o.Entries = entriesRelTo(root, o.Entries)
 			o.Scopes = nil
 		}
+		if !noConfig {
+			cfg, path, err := loadConfig(root)
+			if err != nil {
+				return err
+			}
+			if cfg != nil {
+				cfg.apply(&o, setFlags(fs))
+				o.ConfigFile = path
+			}
+		}
 	}
+	o.Format = strings.ToLower(o.Format)
+	switch o.Format {
+	case "xml", "md", "markdown", "txt", "plain", "text", "json":
+	default:
+		return fmt.Errorf("unknown format %q (use xml, md, json or txt)", o.Format)
+	}
+	setTokenizer(o.Tokenizer)
 	if o.Output == "" {
 		o.Output = "ctxpack-output" + extFor(o.Format) // written to the current folder
 	}
@@ -444,6 +460,9 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 	fmt.Fprintf(e, "  %-12s %s\n", "project", p.Root)
 	if len(o.Scopes) > 0 {
 		fmt.Fprintf(e, "  %-12s %s\n", "only", strings.Join(o.Scopes, ", "))
+	}
+	if o.ConfigFile != "" {
+		fmt.Fprintf(e, "  %-12s %s\n", "config", filepath.Base(o.ConfigFile))
 	}
 	if len(p.Presets) > 0 {
 		fmt.Fprintf(e, "  %-12s %s\n", "detected", strings.Join(p.Presets, ", "))

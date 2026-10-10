@@ -74,6 +74,7 @@ type Options struct {
 	NoTree         bool
 	KeepNoise      bool
 	NoCache        bool
+	ConfigFile     string
 	Scopes         []string // only these folders/files inside Root (empty = all)
 }
 

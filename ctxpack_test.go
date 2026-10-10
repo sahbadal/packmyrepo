@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -215,5 +217,38 @@ func TestSecretsSkipCleanFiles(t *testing.T) {
 	out, found := redactSecrets("a.js", src)
 	if out != src || len(found) != 0 {
 		t.Fatalf("clean file was changed: %q %v", out, found)
+	}
+}
+
+func TestConfig(t *testing.T) {
+	dir := t.TempDir()
+	cfg := `{"format": "md", "compress": true, "budget": "50k", "ignore": ["docs/**"], "security": false}`
+	if err := os.WriteFile(filepath.Join(dir, configName), []byte(cfg), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c, _, err := loadConfig(dir)
+	if err != nil || c == nil {
+		t.Fatalf("load: %v", err)
+	}
+	o := defaultOptions()
+	o.Format = "json"             // typed by the user
+	o.Ignore = []string{"tmp/**"} // typed by the user
+	c.apply(&o, map[string]bool{"format": true})
+	if o.Format != "json" {
+		t.Errorf("flag must win over config, got %q", o.Format)
+	}
+	if !o.Compress || o.Budget != 50000 || !o.NoSecrets {
+		t.Errorf("config values not applied: %+v", o)
+	}
+	if len(o.Ignore) != 2 {
+		t.Errorf("ignore lists should merge, got %v", o.Ignore)
+	}
+
+	os.WriteFile(filepath.Join(dir, configName), []byte(`{"formatt": "md"}`), 0o644)
+	if _, _, err := loadConfig(dir); err == nil || !strings.Contains(err.Error(), "unknown setting") {
+		t.Errorf("typo must be reported, got %v", err)
+	}
+	if c, _, err := loadConfig(t.TempDir()); c != nil || err != nil {
+		t.Errorf("missing config must be fine, got %v %v", c, err)
 	}
 }

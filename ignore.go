@@ -203,7 +203,7 @@ var defaultIgnores = []string{
 	"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "bun.lock",
 	"go.sum", "Cargo.lock", "poetry.lock", "Pipfile.lock", "uv.lock",
 	"composer.lock", "Gemfile.lock", "pubspec.lock", "packages.lock.json",
-	"ctxpack-output.*", "ctxpack-output-*", "repomix-output.*",
+	"ctxpack-output.*", "ctxpack-output-*", "repomix-output.*", "/ctxpack.json",
 }
 
 // noiseFiles rarely help an AI understand code. They are skipped by default;
