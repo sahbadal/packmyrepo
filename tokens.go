@@ -53,7 +53,7 @@ func countAll(files []*File) {
 		go func() {
 			defer wg.Done()
 			for f := range jobs {
-				f.Tokens = countTokens(f.Content)
+				f.Tokens = countTokensCached(f.Content)
 			}
 		}()
 	}

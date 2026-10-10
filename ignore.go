@@ -13,7 +13,17 @@ type rule struct {
 	negate  bool
 	dirOnly bool
 	base    string // directory (slash path, "" = root) the pattern is relative to
+	// fast paths for the most common patterns, so no regex is needed:
+	// kindName = "node_modules" (any depth), kindSuffix = "*.log"
+	kind int
+	lit  string
 }
+
+const (
+	kindRegex = iota
+	kindName
+	kindSuffix
+)
 
 // Matcher evaluates gitignore-style rules. Later rules win, like git.
 type Matcher struct {
@@ -62,7 +72,16 @@ func (m *Matcher) Match(rel string, isDir bool) bool {
 			}
 			p = strings.TrimPrefix(rel, r.base+"/")
 		}
-		if r.re.MatchString(p) {
+		var hit bool
+		switch r.kind {
+		case kindName:
+			hit = baseName(p) == r.lit
+		case kindSuffix:
+			hit = strings.HasSuffix(baseName(p), r.lit)
+		default:
+			hit = r.re.MatchString(p)
+		}
+		if hit {
 			matched = !r.negate
 		}
 	}
@@ -102,6 +121,13 @@ func compilePattern(p, base string) (rule, bool) {
 	}
 	anchored := strings.Contains(p, "/")
 	p = strings.TrimPrefix(p, "/")
+	if !anchored {
+		if !strings.ContainsAny(p, "*?[\\") {
+			r.kind, r.lit = kindName, p
+		} else if strings.HasPrefix(p, "*") && !strings.ContainsAny(p[1:], "*?[\\") {
+			r.kind, r.lit = kindSuffix, p[1:]
+		}
+	}
 
 	var b strings.Builder
 	if anchored {
@@ -162,6 +188,10 @@ func compilePattern(p, base string) (rule, bool) {
 	}
 	r.re = re
 	return r, true
+}
+
+func baseName(p string) string {
+	return p[strings.LastIndexByte(p, '/')+1:]
 }
 
 // defaultIgnores are always skipped (unless --no-default-ignore).

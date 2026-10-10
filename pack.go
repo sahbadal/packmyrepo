@@ -2,13 +2,16 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 )
 
 type Mode int
@@ -70,7 +73,8 @@ type Options struct {
 	Quiet          bool
 	NoTree         bool
 	KeepNoise      bool
-	Scopes         []string
+	NoCache        bool
+	Scopes         []string // only these folders/files inside Root (empty = all)
 }
 
 func defaultOptions() Options {
@@ -107,6 +111,9 @@ func Scan(o Options) (*Project, error) {
 		return nil, fmt.Errorf("%s is not a directory", o.Root)
 	}
 	p := &Project{Root: root, Name: filepath.Base(root)}
+	if !o.NoCache {
+		openTokenCache(root)
+	}
 
 	m := &Matcher{}
 	if !o.NoDefaults {
@@ -128,12 +135,10 @@ func Scan(o Options) (*Project, error) {
 			}
 		}
 	}
-
 	noise := &Matcher{}
 	if !o.NoDefaults && !o.KeepNoise {
 		noise.AddLines(noiseFiles, "")
 	}
-
 	var incl *Matcher
 	if len(o.Include) > 0 {
 		incl = &Matcher{}
@@ -196,45 +201,78 @@ func Scan(o Options) (*Project, error) {
 		user.Add(ig, "")
 	}
 
-	for _, rel := range paths {
+	// Read, check and redact files on every CPU core. Results keep their slot
+	// so the output order never depends on which worker finished first.
+	type result struct {
+		file *File
+		skip *Skipped
+	}
+	results := make([]result, len(paths))
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for w := 0; w < runtime.NumCPU(); w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				f, sk := loadFile(root, paths[i], o)
+				results[i] = result{f, sk}
+			}
+		}()
+	}
+	for i, rel := range paths {
 		if len(o.Ignore) > 0 && user.MatchPath(rel) {
 			continue
 		}
-		abs := filepath.Join(root, filepath.FromSlash(rel))
-		info, err := os.Stat(abs)
-		if err != nil {
-			continue
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	for _, r := range results {
+		if r.file != nil {
+			p.Files = append(p.Files, r.file)
+		} else if r.skip != nil {
+			p.Skipped = append(p.Skipped, *r.skip)
 		}
-		if o.MaxSize > 0 && info.Size() > o.MaxSize {
-			p.Skipped = append(p.Skipped, Skipped{rel, "too large (" + humanBytes(info.Size()) + ")"})
-			continue
-		}
-		data, err := os.ReadFile(abs)
-		if err != nil {
-			continue
-		}
-		if len(strings.TrimSpace(string(data))) == 0 {
-			continue // empty files add nothing
-		}
-		if looksBinary(rel, data) {
-			p.Skipped = append(p.Skipped, Skipped{rel, "binary"})
-			continue
-		}
-		content := strings.ReplaceAll(string(data), "\r\n", "\n")
-		content = strings.TrimPrefix(content, "\ufeff")
-		f := &File{Path: rel, Lang: langOf(rel), Size: info.Size(), Depth: -1}
-		if !o.NoSecrets {
-			content, f.Secrets = redactSecrets(rel, content)
-		}
-		f.Raw = content
-		f.Content = content
-		f.Priority = priorityOf(rel)
-		p.Files = append(p.Files, f)
 	}
 	sort.Slice(p.Files, func(i, j int) bool { return p.Files[i].Path < p.Files[j].Path })
 	p.GoModule = readGoModule(root)
 	countAll(p.Files)
+	saveTokenCache()
 	return p, nil
+}
+
+// loadFile reads one file. It returns the file, or a reason it was skipped,
+// or neither for files that are silently dropped (unreadable or empty).
+func loadFile(root, rel string, o Options) (*File, *Skipped) {
+	abs := filepath.Join(root, filepath.FromSlash(rel))
+	info, err := os.Stat(abs)
+	if err != nil {
+		return nil, nil
+	}
+	if o.MaxSize > 0 && info.Size() > o.MaxSize {
+		return nil, &Skipped{rel, "too large (" + humanBytes(info.Size()) + ")"}
+	}
+	data, err := os.ReadFile(abs)
+	if err != nil {
+		return nil, nil
+	}
+	if len(bytes.TrimSpace(data)) == 0 {
+		return nil, nil // empty files add nothing
+	}
+	if looksBinary(rel, data) {
+		return nil, &Skipped{rel, "binary"}
+	}
+	content := strings.ReplaceAll(string(data), "\r\n", "\n")
+	content = strings.TrimPrefix(content, "\ufeff")
+	f := &File{Path: rel, Lang: langOf(rel), Size: info.Size(), Depth: -1}
+	if !o.NoSecrets {
+		content, f.Secrets = redactSecrets(rel, content)
+	}
+	f.Raw = content
+	f.Content = content
+	f.Priority = priorityOf(rel)
+	return f, nil
 }
 
 func readGoModule(root string) string {
@@ -357,6 +395,7 @@ func Select(p *Project, o Options) ([]*File, []string, error) {
 
 // Transform applies comment removal and compression, then recounts tokens.
 func Transform(files []*File, o Options) {
+	var changed []*File
 	for _, f := range files {
 		c := f.Raw
 		if o.RemoveComments {
@@ -372,10 +411,11 @@ func Transform(files []*File, o Options) {
 				f.Mode = ModeCompressed
 			}
 		}
+		if f.Content != f.Raw {
+			changed = append(changed, f)
+		}
 	}
-	if o.RemoveComments || o.Compress {
-		countAll(files)
-	}
+	countAll(changed) // unchanged files keep the count from Scan
 }
 
 // FitBudget shrinks the pack until it fits: compress least important files first,

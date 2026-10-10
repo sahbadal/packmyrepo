@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const version = "0.1.0"
@@ -98,7 +99,8 @@ PACK FLAGS
       --line-numbers       prefix lines with numbers
       --max-size SIZE      skip files bigger than this (default 1MB)
       --no-gitignore       do not read .gitignore files
-	  --keep-noise         keep config files like .gitignore, LICENSE, .prettierrc
+      --keep-noise         keep config files like .gitignore, LICENSE, .prettierrc
+      --no-cache           do not reuse token counts from the last run
       --no-default-ignore  do not use built-in ignore rules and presets
       --no-security        do not redact secrets
       --tokenizer NAME     o200k_base (default) | cl100k_base
@@ -223,6 +225,7 @@ func parseFlags(fs *flag.FlagSet, args []string) error {
 // ---------- pack ----------
 
 func runPack(args []string) error {
+	started := time.Now()
 	o := defaultOptions()
 	fs := newFlagSet("pack")
 	var include, ignore, entries listFlag
@@ -264,6 +267,7 @@ func runPack(args []string) error {
 	fs.BoolVar(&o.Quiet, "quiet", false, "")
 	fs.BoolVar(&o.NoTree, "no-tree", false, "")
 	fs.BoolVar(&o.KeepNoise, "keep-noise", false, "")
+	fs.BoolVar(&o.NoCache, "no-cache", false, "")
 	if err := parseFlags(fs, args); err != nil {
 		return err
 	}
@@ -356,6 +360,7 @@ func runPack(args []string) error {
 		in.Notes = append(in.Notes, notes...)
 	}
 	parts, total := renderAll(in, o.Split)
+	saveTokenCache()
 
 	// ---- write results ----
 	var written []string
@@ -385,7 +390,7 @@ func runPack(args []string) error {
 		}
 	}
 	if !o.Quiet {
-		printReport(p, files, total, written, copied, in.Notes, o)
+		printReport(p, files, total, written, copied, in.Notes, o, time.Since(started))
 	}
 	return nil
 }
@@ -415,7 +420,7 @@ func partNames(out string, n int) []string {
 	return names
 }
 
-func printReport(p *Project, files []*File, total int, written []string, copied bool, notes []string, o Options) {
+func printReport(p *Project, files []*File, total int, written []string, copied bool, notes []string, o Options, took time.Duration) {
 	e := os.Stderr
 	var full, comp, trunc, omit int
 	var secretFiles []string
@@ -456,6 +461,7 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 	}
 	fmt.Fprintf(e, "  %-12s %s %s\n", "tokens", bold(humanTokens(total)), dim("("+encoderName+")"))
 	fmt.Fprintf(e, "  %-12s %s\n", "fits in", fitText(total))
+	fmt.Fprintf(e, "  %-12s %s\n", "time", took.Round(10*time.Millisecond))
 
 	// heatmap of the biggest files
 	if o.Top > 0 {

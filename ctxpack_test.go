@@ -185,3 +185,35 @@ func TestJSONOutput(t *testing.T) {
 		t.Fatalf("unexpected JSON: %+v", got)
 	}
 }
+
+func TestTokenCache(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir) // Linux
+	t.Setenv("LocalAppData", dir)   // Windows
+	t.Setenv("HOME", dir)           // macOS uses ~/Library/Caches
+	defer func() { tokenCache.enabled = false }()
+
+	text := strings.Repeat("func main() { fmt.Println(\"hello\") }\n", 20)
+	want := countTokens(text)
+	openTokenCache("/some/project")
+	if got := countTokensCached(text); got != want {
+		t.Fatalf("cached count %d, want %d", got, want)
+	}
+	saveTokenCache()
+
+	openTokenCache("/some/project")
+	if len(tokenCache.old) != 1 {
+		t.Fatalf("cache was not saved and loaded back: %v", tokenCache.old)
+	}
+	if got := countTokensCached(text); got != want {
+		t.Fatalf("count from disk %d, want %d", got, want)
+	}
+}
+
+func TestSecretsSkipCleanFiles(t *testing.T) {
+	src := "const total = items.reduce((a, b) => a + b, 0);\n"
+	out, found := redactSecrets("a.js", src)
+	if out != src || len(found) != 0 {
+		t.Fatalf("clean file was changed: %q %v", out, found)
+	}
+}
