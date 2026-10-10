@@ -5,36 +5,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>packmyrepo</title>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='7' width='26' height='20' rx='3' fill='%23F5B700'/%3E%3Crect x='13' y='7' width='6' height='20' fill='%23B88600'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap"
     rel="stylesheet">
   <style>
     :root {
-      --paper: #EEF1F4;
+      --bg: #EEF1F5;
       --panel: #FFFFFF;
-      --ink: #14213D;
-      --muted: #5C6B80;
-      --line: #C9D1DB;
+      --sunken: #E4E8EE;
+      --ink: #142033;
+      --muted: #5E6B7E;
+      --faint: #8A95A6;
+      --line: #D3DAE3;
       --tape: #F5B700;
+      --tape-dark: #B88600;
       --tape-ink: #2A1F00;
+      --heat: rgba(245, 183, 0, .16);
       --stamp: #D7263D;
-      --ok: #1F8A5B;
-      --row-hover: #E3E8EE;
-      --sel: #FFF4CC;
+      --ok: #1E8A5A;
+      --warn: #A86F00;
+      --focus: #2F6FEB;
+      --row: #E9EDF2;
+      --chip: #E7EBF1;
       --sans: "Archivo", "Segoe UI", system-ui, sans-serif;
       --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+      --shadow: 0 1px 0 rgba(20, 32, 51, .04), 0 8px 24px -12px rgba(20, 32, 51, .18);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --paper: #0F1626;
-        --panel: #172034;
-        --ink: #E6EBF2;
-        --muted: #93A1B5;
-        --line: #2B3750;
-        --row-hover: #1E2A42;
-        --sel: #3A3214;
+        --bg: #0D1422;
+        --panel: #141D2E;
+        --sunken: #0A101B;
+        --ink: #E6ECF4;
+        --muted: #94A2B6;
+        --faint: #66748A;
+        --line: #243149;
+        --heat: rgba(245, 183, 0, .10);
+        --row: #1A2438;
+        --chip: #1C273B;
+        --ok: #3DBE84;
+        --warn: #E0A824;
+        --shadow: 0 1px 0 rgba(0, 0, 0, .2), 0 12px 28px -14px rgba(0, 0, 0, .6);
       }
     }
 
@@ -49,9 +64,20 @@
     }
 
     body {
-      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+    }
+
+    body>main {
+      flex: 1;
+      min-height: 0;
+    }
+
+    body {
+      background: var(--bg);
       color: var(--ink);
       font: 15px/1.45 var(--sans);
+      -webkit-font-smoothing: antialiased;
     }
 
     button,
@@ -63,90 +89,141 @@
     }
 
     :focus-visible {
-      outline: 3px solid var(--tape);
+      outline: 2px solid var(--focus);
       outline-offset: 2px;
     }
 
-    header {
+    [hidden] {
+      display: none !important;
+    }
+
+    kbd {
+      font: 600 11px/1 var(--mono);
+      padding: 3px 5px;
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      color: var(--muted);
+      background: var(--panel);
+    }
+
+    /* ---------- header ---------- */
+    .top {
       display: flex;
-      align-items: baseline;
-      gap: 18px;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
       flex-wrap: wrap;
-      padding: 18px 24px 14px;
-      border-bottom: 2px solid var(--ink);
     }
 
     .brand {
-      font-weight: 800;
-      font-stretch: 70%;
-      font-size: 26px;
-      letter-spacing: -0.01em;
-    }
-
-    .project {
-      font-family: var(--mono);
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .presets {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-mark {
+      width: 26px;
+      height: 20px;
+      border-radius: 4px;
+      background: var(--tape);
+      position: relative;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .12);
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      width: 6px;
+      top: 0;
+      bottom: 0;
+      background: var(--tape-dark);
+    }
+
+    .brand-name {
+      font-weight: 800;
+      font-stretch: 72%;
+      font-size: 22px;
+      letter-spacing: -.01em;
+    }
+
+    .path {
+      font: 13px var(--mono);
+      color: var(--muted);
+      max-width: 46vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .chip {
       font-size: 12px;
-      padding: 2px 8px;
-      border: 1px solid var(--line);
+      padding: 2px 9px;
       border-radius: 999px;
+      background: var(--chip);
       color: var(--muted);
     }
 
     .tabs {
       margin-left: auto;
-      display: flex;
-      gap: 4px;
+      display: inline-flex;
+      padding: 3px;
+      gap: 2px;
+      background: var(--sunken);
+      border-radius: 9px;
     }
 
     .tab {
-      background: none;
       border: 0;
-      padding: 6px 12px;
-      border-bottom: 3px solid transparent;
+      background: none;
+      padding: 6px 14px;
+      border-radius: 7px;
       cursor: pointer;
       font-weight: 600;
       color: var(--muted);
     }
 
     .tab[aria-selected="true"] {
+      background: var(--panel);
       color: var(--ink);
-      border-bottom-color: var(--tape);
+      box-shadow: var(--shadow);
     }
 
-    main {
+    /* ---------- pack view layout ---------- */
+    .pack {
       display: grid;
-      grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.15fr);
-      height: calc(100% - 66px);
+      grid-template-columns: minmax(340px, 1fr) minmax(400px, 520px);
     }
 
-    @media (max-width: 860px) {
-      main {
-        grid-template-columns: 1fr;
+    @media (max-width: 920px) {
+      body {
         height: auto;
+        display: block;
+      }
+
+      .pack {
+        grid-template-columns: 1fr;
+      }
+
+      .files {
+        height: 60vh;
       }
     }
 
-    section {
-      min-height: 0;
+    /* ---------- file list ---------- */
+    .files {
       display: flex;
       flex-direction: column;
-    }
-
-    .left {
+      min-height: 0;
       border-right: 1px solid var(--line);
     }
 
-    .toolbar {
+    .files-bar {
       display: flex;
       gap: 8px;
       align-items: center;
@@ -156,198 +233,316 @@
     }
 
     .search {
+      position: relative;
       flex: 1;
-      min-width: 140px;
-      padding: 7px 10px;
+      min-width: 160px;
+    }
+
+    .search input {
+      width: 100%;
+      padding: 8px 34px 8px 32px;
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--panel);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--faint);
+    }
+
+    .search kbd {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       padding: 7px 12px;
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--panel);
       cursor: pointer;
       white-space: nowrap;
+      font-size: 14px;
     }
 
-    .btn:hover {
-      border-color: var(--ink);
+    .btn:hover:not(:disabled) {
+      border-color: var(--muted);
     }
 
-    .btn.primary {
-      background: var(--tape);
-      color: var(--tape-ink);
-      border-color: var(--tape);
-      font-weight: 700;
+    .btn:disabled {
+      opacity: .45;
+      cursor: default;
     }
 
-    .btn.primary:hover {
-      filter: brightness(1.05);
-      border-color: var(--tape-ink);
+    .btn.ghost {
+      border-color: transparent;
+      background: none;
+      color: var(--muted);
+    }
+
+    .btn.ghost:hover:not(:disabled) {
+      background: var(--row);
+      color: var(--ink);
+      border-color: transparent;
     }
 
     .btn.danger {
       color: var(--stamp);
     }
 
-    .btn:disabled {
-      opacity: .5;
-      cursor: default;
+    .btn.primary {
+      background: var(--tape);
+      border-color: var(--tape);
+      color: var(--tape-ink);
+      font-weight: 700;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      border-color: var(--tape-dark);
+      filter: brightness(1.04);
+    }
+
+    .btn.big {
+      padding: 11px 18px;
+      font-size: 15px;
+      border-radius: 10px;
+    }
+
+    .files-meta {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 16px;
+      font-size: 12px;
+      color: var(--faint);
+      border-bottom: 1px solid var(--line);
     }
 
     .tree {
-      overflow: auto;
       flex: 1;
-      padding: 6px 0 24px;
-      font-family: var(--mono);
-      font-size: 13px;
+      overflow: auto;
+      padding: 4px 0 40px;
+      font: 13px/1.4 var(--mono);
     }
 
     .row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 90px 52px;
-      align-items: center;
-      gap: 8px;
-      padding: 2px 16px 2px 0;
-      cursor: default;
-    }
-
-    .row:hover {
-      background: var(--row-hover);
-    }
-
-    .row .name {
       display: flex;
       align-items: center;
-      gap: 4px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-
-    .row .twisty {
-      width: 16px;
-      text-align: center;
+      gap: 8px;
+      height: 28px;
+      padding: 0 16px 0 0;
       cursor: pointer;
-      color: var(--muted);
       user-select: none;
     }
 
-    .row.dir .label {
-      font-weight: 600;
+    .row:hover {
+      background: var(--row);
     }
 
-    .row .tok {
-      color: var(--muted);
-      text-align: right;
-      font-size: 12px;
+    .row.off {
+      color: var(--faint);
     }
 
-    .row .heat {
+    .bar {
+      flex: none;
+      width: 64px;
       height: 4px;
-      background: var(--line);
       border-radius: 2px;
+      background: var(--sunken);
       overflow: hidden;
     }
 
-    .row .heat i {
+    .bar i {
       display: block;
       height: 100%;
-      background: var(--ink);
-      opacity: .55;
+      width: var(--w, 0%);
+      min-width: 2px;
+      background: var(--tape-dark);
+      border-radius: 2px;
     }
 
-    .row .secret {
-      color: var(--stamp);
-      font-size: 11px;
-      margin-left: 6px;
+    .row.off .bar i {
+      background: var(--line);
+    }
+
+    .indent {
+      flex: none;
+    }
+
+    .twisty {
+      flex: none;
+      width: 18px;
+      text-align: center;
+      color: var(--faint);
+      font-size: 10px;
     }
 
     .row input {
-      margin: 0 0 0 4px;
-      accent-color: var(--ink);
+      flex: none;
+      margin: 0;
+      width: 15px;
+      height: 15px;
+      accent-color: var(--tape-dark);
+      cursor: pointer;
+    }
+
+    .dot {
+      flex: none;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--faint);
+    }
+
+    .name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row.dir .name {
+      font-weight: 600;
+    }
+
+    .lock {
+      flex: none;
+      font: 600 10px/1 var(--sans);
+      color: var(--stamp);
+      border: 1px solid currentColor;
+      border-radius: 4px;
+      padding: 2px 5px;
+    }
+
+    .tok {
+      flex: none;
+      width: 56px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
     }
 
     .empty {
-      padding: 24px;
+      padding: 40px 24px;
       color: var(--muted);
       font-family: var(--sans);
+      text-align: center;
     }
 
-    .right {
+    /* ---------- side panel ---------- */
+    .side {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--panel);
+    }
+
+    .side-scroll {
+      flex: 1;
       overflow: auto;
     }
 
     .load {
-      padding: 22px 24px 18px;
+      padding: 22px 24px 26px;
       border-bottom: 1px solid var(--line);
     }
 
-    .load-figure {
+    .load-num {
       display: flex;
       align-items: baseline;
       gap: 10px;
     }
 
-    .load-num {
+    .load-num b {
       font-weight: 800;
       font-stretch: 62%;
-      font-size: 64px;
-      line-height: 1;
-      letter-spacing: -0.02em;
+      font-size: 72px;
+      line-height: .9;
+      letter-spacing: -.02em;
       font-variant-numeric: tabular-nums;
     }
 
-    .load-unit {
+    .load-num span {
       color: var(--muted);
     }
 
     .load-sub {
+      margin-top: 8px;
       color: var(--muted);
       font-size: 13px;
-      margin-top: 4px;
+      min-height: 19px;
+    }
+
+    .load-sub.over {
+      color: var(--stamp);
     }
 
     .scale {
       position: relative;
-      height: 34px;
-      margin: 18px 0 22px;
-      border: 2px solid var(--ink);
-      border-radius: 3px;
-      background:
-        repeating-linear-gradient(90deg, transparent 0 9px, var(--line) 9px 10px);
+      height: 14px;
+      margin: 18px 0 26px;
+      border-radius: 7px;
+      background: var(--sunken);
+      overflow: visible;
     }
 
     .fill {
       position: absolute;
       inset: 0 auto 0 0;
       width: 0;
+      border-radius: 7px;
       background: var(--tape);
-      transition: width .35s ease;
+      background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, .08) 0 6px, transparent 6px 12px);
+      transition: width .35s cubic-bezier(.2, .8, .2, 1);
     }
 
     .fill.over {
-      background: var(--stamp);
+      background-color: var(--stamp);
     }
 
     .tick {
       position: absolute;
-      top: -2px;
-      bottom: -2px;
+      top: -4px;
+      bottom: -4px;
       width: 2px;
-      background: var(--ink);
+      margin-left: -1px;
+      background: var(--line);
+      border-radius: 1px;
     }
 
     .tick span {
       position: absolute;
-      top: 36px;
+      top: 24px;
+      left: 50%;
       transform: translateX(-50%);
-      font-size: 12px;
-      color: var(--muted);
+      font-size: 11px;
+      color: var(--faint);
       white-space: nowrap;
+    }
+
+    .tick.l span {
+      transform: translateX(calc(-100% + 1px));
+    }
+
+    .tick.r span {
+      transform: translateX(-1px);
+    }
+
+    .tick.passed {
+      background: var(--ink);
+    }
+
+    .tick.passed span {
+      color: var(--ink);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -356,177 +551,379 @@
       }
     }
 
-    .opts {
-      padding: 16px 24px;
+    .group {
+      padding: 18px 24px 20px;
+      border-bottom: 1px solid var(--line);
       display: grid;
       gap: 14px;
-      border-bottom: 1px solid var(--line);
     }
 
-    .opt-row {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      align-items: center;
+    .group h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
     }
 
     .seg {
-      display: inline-flex;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      overflow: hidden;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 3px;
+      background: var(--sunken);
+      border-radius: 9px;
+      gap: 2px;
     }
 
     .seg button {
       border: 0;
-      background: var(--panel);
-      padding: 6px 12px;
+      background: none;
+      padding: 7px 0;
+      border-radius: 7px;
       cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 14px;
     }
 
     .seg button[aria-pressed="true"] {
-      background: var(--ink);
-      color: var(--paper);
+      background: var(--panel);
+      color: var(--ink);
+      box-shadow: var(--shadow);
     }
 
-    label.check {
-      display: inline-flex;
-      gap: 6px;
+    .hint {
+      font-size: 12.5px;
+      color: var(--faint);
+      margin-top: -6px;
+    }
+
+    .switch {
+      display: flex;
       align-items: center;
+      gap: 12px;
       cursor: pointer;
     }
 
-    label.check input {
-      accent-color: var(--ink);
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch .track {
+      flex: none;
+      width: 34px;
+      height: 20px;
+      border-radius: 10px;
+      background: var(--line);
+      position: relative;
+      transition: background .15s;
+    }
+
+    .switch .track::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+      transition: transform .15s;
+    }
+
+    .switch input:checked+.track {
+      background: var(--tape-dark);
+    }
+
+    .switch input:checked+.track::after {
+      transform: translateX(14px);
+    }
+
+    .switch input:focus-visible+.track {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .switch .txt {
+      display: grid;
+    }
+
+    .switch .txt small {
+      color: var(--faint);
+      font-size: 12.5px;
     }
 
     .field {
       display: grid;
-      gap: 4px;
+      gap: 6px;
       font-size: 13px;
       color: var(--muted);
     }
 
-    .field select,
     .field input,
     .field textarea {
       color: var(--ink);
-      background: var(--panel);
+      background: var(--bg);
       border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 7px 10px;
+      border-radius: 8px;
+      padding: 8px 10px;
     }
 
     .field textarea {
       resize: vertical;
-      min-height: 60px;
+      min-height: 70px;
     }
 
-    .budget {
-      width: 110px;
-    }
-
-    .result {
-      padding: 16px 24px 28px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .result-head {
+    .budget-row {
       display: flex;
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
     }
 
-    .status {
+    .budget-row input {
+      width: 110px;
+    }
+
+    .quick {
+      border: 1px solid var(--line);
+      background: none;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12.5px;
+      cursor: pointer;
       color: var(--muted);
-      font-size: 13px;
+    }
+
+    .quick:hover,
+    .quick[aria-pressed="true"] {
+      border-color: var(--tape-dark);
+      color: var(--ink);
+    }
+
+    .prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .prompt {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+
+    .prompt:hover {
+      border-color: var(--muted);
+    }
+
+    .prompt[aria-pressed="true"] {
+      background: var(--ink);
+      color: var(--panel);
+      border-color: var(--ink);
+    }
+
+    .prompt-desc {
+      font-size: 12.5px;
+      color: var(--faint);
+      min-height: 18px;
+      margin-top: -4px;
+    }
+
+    .action {
+      padding: 14px 24px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+    }
+
+    .action .status {
       margin-right: auto;
+      font-size: 13px;
+      color: var(--muted);
     }
 
     .status.err {
       color: var(--stamp);
     }
 
+    .result {
+      padding: 18px 24px 28px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .result-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .result-head h2 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stats b {
+      display: block;
+      font-size: 20px;
+      font-stretch: 75%;
+      color: var(--ink);
+    }
+
     pre.preview {
       margin: 0;
-      max-height: 46vh;
+      max-height: 340px;
       overflow: auto;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 12px;
-      font: 12px/1.5 var(--mono);
+      background: var(--sunken);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font: 12px/1.55 var(--mono);
       white-space: pre;
     }
 
-    /* apply view */
-    .apply {
-      padding: 20px 24px;
-      display: grid;
-      gap: 14px;
-      max-width: 980px;
+    .notes {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      color: var(--muted);
     }
 
-    .apply h2 {
+    /* ---------- apply view ---------- */
+    .apply {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 920px) {
+      .apply {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .apply>section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .apply .paste {
+      border-right: 1px solid var(--line);
+      padding: 22px 24px;
+      gap: 12px;
+    }
+
+    .apply h1 {
       margin: 0;
       font-stretch: 75%;
-      font-size: 26px;
+      font-size: 30px;
+      line-height: 1.1;
     }
 
     .apply p {
       margin: 0;
       color: var(--muted);
-      max-width: 70ch;
+      max-width: 62ch;
     }
 
     .apply textarea {
+      flex: 1;
+      min-height: 260px;
       width: 100%;
-      min-height: 220px;
-      font: 12px/1.5 var(--mono);
-      padding: 12px;
+      resize: none;
+      font: 12px/1.55 var(--mono);
+      padding: 14px;
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 10px;
     }
 
-    table.changes {
-      border-collapse: collapse;
-      width: 100%;
-      font-size: 14px;
+    .apply-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
-    .changes td {
-      padding: 6px 10px;
+    .plan {
+      background: var(--panel);
+      padding: 22px 24px;
+      overflow: auto;
+      gap: 14px;
+    }
+
+    .plan h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .plan-empty {
+      color: var(--faint);
+      padding: 30px 0;
+    }
+
+    .change {
+      display: grid;
+      grid-template-columns: 74px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 0;
       border-bottom: 1px solid var(--line);
     }
 
-    .changes td.path {
-      font-family: var(--mono);
-      font-size: 13px;
+    .change .path {
+      direction: ltr;
+      max-width: none;
+      color: var(--ink);
+      white-space: normal;
+      word-break: break-all;
     }
 
     .kind {
-      font-weight: 700;
-      font-size: 12px;
+      font: 700 11px/1 var(--sans);
+      padding: 4px 0;
+      border-radius: 5px;
+      text-align: center;
     }
 
     .kind.new {
+      background: color-mix(in srgb, var(--ok) 16%, transparent);
       color: var(--ok);
     }
 
     .kind.modify {
-      color: #B07A00;
+      background: color-mix(in srgb, var(--warn) 18%, transparent);
+      color: var(--warn);
     }
 
     .kind.delete,
     .kind.invalid {
+      background: color-mix(in srgb, var(--stamp) 14%, transparent);
       color: var(--stamp);
     }
 
     .kind.unchanged {
-      color: var(--muted);
+      background: var(--chip);
+      color: var(--faint);
+    }
+
+    .diff {
+      font: 12px var(--mono);
+      white-space: nowrap;
     }
 
     .add {
@@ -537,142 +934,252 @@
       color: var(--stamp);
     }
 
-    .warn {
+    .change .note {
+      grid-column: 2 / -1;
       color: var(--stamp);
-      font-size: 13px;
+      font-size: 12.5px;
+      margin-top: -4px;
     }
 
-    [hidden] {
-      display: none !important;
+    /* ---------- toast ---------- */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 20px);
+      opacity: 0;
+      background: var(--ink);
+      color: var(--panel);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      transition: opacity .2s, transform .2s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <div class="brand">packmyrepo</div>
-    <div class="project" id="project">loading…</div>
-    <div class="presets" id="presets"></div>
-    <nav class="tabs" role="tablist">
+  <header class="top">
+    <a class="brand" href="/" aria-label="packmyrepo home"><span class="brand-mark" aria-hidden="true"></span><span
+        class="brand-name">packmyrepo</span></a>
+    <span class="path" id="project" title="">loading…</span>
+    <span id="presets"></span>
+    <nav class="tabs" role="tablist" aria-label="View">
       <button class="tab" role="tab" aria-selected="true" data-view="pack">Pack</button>
       <button class="tab" role="tab" aria-selected="false" data-view="apply">Apply answer</button>
     </nav>
   </header>
 
-  <main id="view-pack">
-    <section class="left">
-      <div class="toolbar">
-        <input class="search" id="search" type="search" placeholder="Filter files" aria-label="Filter files">
-        <button class="btn" id="all">All</button>
-        <button class="btn" id="none">None</button>
-        <button class="btn" id="imports" title="Also select every file the selected files import">Add imports</button>
-        <button class="btn" id="refresh" title="Scan the folder again">Rescan</button>
+  <main class="pack" id="view-pack">
+    <section class="files" aria-label="Files">
+      <div class="files-bar">
+        <label class="search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input id="search" type="search" placeholder="Filter files" aria-label="Filter files" autocomplete="off">
+          <kbd>/</kbd>
+        </label>
+        <button class="btn ghost" id="all">Select all</button>
+        <button class="btn ghost" id="none">Clear</button>
+        <button class="btn" id="imports" title="Also select every file that the selected files import">+
+          Imports</button>
+        <button class="btn ghost" id="refresh" title="Scan the folder again" aria-label="Rescan folder">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            aria-hidden="true">
+            <path d="M20 12a8 8 0 1 1-2.3-5.6" />
+            <path d="M20 4v5h-5" />
+          </svg>
+        </button>
       </div>
-      <div class="tree" id="tree" role="tree"></div>
+      <div class="files-meta"><span id="countText">—</span><span>tokens</span></div>
+      <div class="tree" id="tree" role="tree" aria-label="Project files"></div>
     </section>
 
-    <section class="right">
-      <div class="load">
-        <div class="load-figure"><span class="load-num" id="loadNum">0</span><span class="load-unit">tokens
-            selected</span></div>
-        <div class="load-sub" id="loadSub">Select files on the left.</div>
-        <div class="scale" id="scale" aria-hidden="true">
-          <div class="fill" id="fill"></div>
+    <aside class="side" aria-label="Pack settings">
+      <div class="side-scroll">
+        <div class="load">
+          <div class="load-num"><b id="loadNum">0</b><span>tokens</span></div>
+          <div class="load-sub" id="loadSub">Select files on the left.</div>
+          <div class="scale" id="scale" aria-hidden="true">
+            <div class="fill" id="fill"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="opts">
-        <div class="opt-row">
+        <div class="group">
+          <h2>Output</h2>
           <div class="seg" id="format" role="group" aria-label="Output format">
             <button aria-pressed="true" data-v="xml">XML</button>
             <button aria-pressed="false" data-v="md">Markdown</button>
             <button aria-pressed="false" data-v="json">JSON</button>
             <button aria-pressed="false" data-v="txt">Plain</button>
           </div>
-          <label class="check"><input type="checkbox" id="compress"> Compress code</label>
-          <label class="check"><input type="checkbox" id="nocomments"> Remove comments</label>
-          <label class="check"><input type="checkbox" id="linenums"> Line numbers</label>
+          <div class="hint" id="formatHint">Best for Claude and a safe choice for any AI.</div>
+          <label class="switch"><input type="checkbox" id="compress"><span class="track"></span>
+            <span class="txt">Compress code<small>Keep signatures and types, drop function bodies</small></span></label>
+          <label class="switch"><input type="checkbox" id="nocomments"><span class="track"></span>
+            <span class="txt">Remove comments<small>Fewer tokens, same code</small></span></label>
+          <label class="switch"><input type="checkbox" id="linenums"><span class="track"></span>
+            <span class="txt">Line numbers<small>Helps the AI point to exact lines</small></span></label>
+          <div class="field">Token budget
+            <div class="budget-row">
+              <input id="budget" placeholder="No limit" inputmode="numeric" aria-label="Token budget">
+              <button class="quick" data-budget="32k">32k</button>
+              <button class="quick" data-budget="128k">128k</button>
+              <button class="quick" data-budget="200k">200k</button>
+            </div>
+          </div>
         </div>
-        <div class="opt-row">
-          <label class="field">Prompt
-            <select id="prompt">
-              <option value="">None</option>
-            </select>
+
+        <div class="group">
+          <h2>Ask the AI</h2>
+          <div class="prompts" id="prompts" role="group" aria-label="Prompt template"></div>
+          <div class="prompt-desc" id="promptDesc">No instructions are added. Write your own below if you like.</div>
+          <label class="field">Your request
+            <textarea id="ask" placeholder="Add a login page with email and password"></textarea>
           </label>
-          <label class="field">Token budget
-            <input class="budget" id="budget" placeholder="e.g. 100k">
-          </label>
-          <label class="check" style="align-self:end;padding-bottom:8px"><input type="checkbox" id="edits"> Ask for
-            editable answer</label>
+          <label class="switch"><input type="checkbox" id="edits"><span class="track"></span>
+            <span class="txt">Ask for an answer I can apply<small>The AI replies with full files that "Apply answer" can
+                write back</small></span></label>
         </div>
-        <label class="field">Your request (optional)
-          <textarea id="ask" placeholder="Add a login page with email and password"></textarea>
-        </label>
+
+        <div class="result" id="result" hidden>
+          <div class="result-head">
+            <h2>Packed</h2><button class="btn" id="copyAgain">Copy again</button>
+          </div>
+          <div class="stats" id="stats"></div>
+          <ul class="notes" id="notes"></ul>
+          <pre class="preview" id="preview"></pre>
+        </div>
       </div>
 
-      <div class="result">
-        <div class="result-head">
-          <span class="status" id="status">Nothing packed yet.</span>
-          <button class="btn primary" id="go">Pack and copy</button>
-          <button class="btn" id="download" disabled>Download</button>
-        </div>
-        <pre class="preview" id="preview" hidden></pre>
+      <div class="action">
+        <span class="status" id="status">Press <kbd>Ctrl</kbd> <kbd>Enter</kbd> to pack</span>
+        <button class="btn" id="download" disabled>Download</button>
+        <button class="btn primary big" id="go">Pack and copy</button>
       </div>
+    </aside>
+  </main>
+
+  <main class="apply" id="view-apply" hidden>
+    <section class="paste">
+      <h1>Apply the AI's answer</h1>
+      <p>Paste the AI's full reply. Files written as <code>&lt;file path="…"&gt;</code> blocks, or as code blocks with a
+        file name, are found automatically. Every file is backed up before it changes.</p>
+      <textarea id="answer" placeholder="Paste the AI response here" aria-label="AI response"></textarea>
+      <div class="apply-bar">
+        <button class="btn" id="paste">Paste from clipboard</button>
+        <button class="btn primary" id="previewApply">Preview changes</button>
+      </div>
+    </section>
+    <section class="plan" aria-live="polite">
+      <h2>Changes</h2>
+      <div id="planBody">
+        <div class="plan-empty">Paste an answer and press “Preview changes” to see which files would change.</div>
+      </div>
+      <label class="switch" id="forceWrap" hidden><input type="checkbox" id="force"><span class="track"></span>
+        <span class="txt">Also write files that look incomplete<small>Only if you are sure the "..." in them is real
+            code</small></span></label>
+      <div class="apply-bar">
+        <button class="btn primary" id="runApply" disabled>Apply changes</button>
+        <button class="btn danger" id="undo">Undo last apply</button>
+      </div>
+      <div class="status" id="applyMsg" role="status"></div>
     </section>
   </main>
 
-  <div id="view-apply" hidden>
-    <div class="apply">
-      <h2>Apply the AI's answer</h2>
-      <p>Paste the full reply from the AI. Files written as &lt;file path="…"&gt; blocks or as code blocks with a file
-        name are found automatically. Every file is backed up before it changes.</p>
-      <textarea id="answer" placeholder="Paste the AI response here" aria-label="AI response"></textarea>
-      <div class="opt-row">
-        <button class="btn" id="previewApply">Preview changes</button>
-        <button class="btn primary" id="runApply" disabled>Apply changes</button>
-        <label class="check"><input type="checkbox" id="force"> Also write files that look incomplete</label>
-        <button class="btn danger" id="undo" style="margin-left:auto">Undo last apply</button>
-      </div>
-      <div id="applyMsg" class="status"></div>
-      <table class="changes" id="changes"></table>
-    </div>
-  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const state = { files: [], byPath: new Map(), selected: new Set(), collapsed: new Set(), filter: "", format: "xml", output: "", ext: ".xml", name: "project" };
+    const state = {
+      files: [], byPath: new Map(), selected: new Set(), collapsed: new Set(), filter: "",
+      format: "xml", prompt: "", prompts: [], output: "", ext: ".xml", name: "project"
+    };
     const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "k" : n >= 1e3 ? (n / 1e3).toFixed(1) + "k" : String(n);
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
     async function api(path, body) {
       const res = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json().catch(() => ({ error: "Bad response from packmyrepo" }));
+      const data = await res.json().catch(() => ({ error: "Unexpected response from packmyrepo" }));
       if (!res.ok) throw new Error(data.error || res.statusText);
       return data;
     }
 
+    let toastTimer;
+    function toast(msg) {
+      const t = $("toast");
+      t.textContent = msg; t.classList.add("show");
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    // ---------- remembered settings (per browser) ----------
+    const PREFS = "packmyrepo.prefs";
+    function savePrefs() {
+      try {
+        localStorage.setItem(PREFS, JSON.stringify({
+          format: state.format, prompt: state.prompt,
+          compress: $("compress").checked, nocomments: $("nocomments").checked, linenums: $("linenums").checked,
+          edits: $("edits").checked, budget: $("budget").value
+        }));
+      } catch (_) { }
+    }
+    function loadPrefs() {
+      try {
+        const p = JSON.parse(localStorage.getItem(PREFS) || "{}");
+        if (p.format) setFormat(p.format);
+        for (const k of ["compress", "nocomments", "linenums", "edits"]) if (k in p) $(k).checked = !!p[k];
+        if (p.budget) $("budget").value = p.budget;
+        if (p.prompt !== undefined) state.prompt = p.prompt;
+      } catch (_) { }
+    }
+
+    // ---------- language colours ----------
+    const LANG = {
+      go: "#00ADD8", js: "#E9C400", jsx: "#E9C400", mjs: "#E9C400", cjs: "#E9C400", ts: "#3178C6", tsx: "#3178C6",
+      py: "#3572A5", rb: "#CC342D", rs: "#DEA584", java: "#B07219", kt: "#A97BFF", swift: "#F05138", dart: "#00B4AB",
+      c: "#555E6B", h: "#555E6B", cpp: "#F34B7D", cs: "#68217A", php: "#4F5D95", html: "#E34C26", css: "#663399", scss: "#C6538C",
+      vue: "#41B883", svelte: "#FF3E00", json: "#8A95A6", yml: "#CB171E", yaml: "#CB171E", toml: "#9C4221", md: "#4A6FA5", sql: "#E38C00", sh: "#89E051"
+    };
+    const langColor = (p) => LANG[p.split(".").pop().toLowerCase()] || "var(--faint)";
+
     // ---------- scale ----------
     const MIN = 200, MAX = 2000000, LIMITS = [["32k", 32000], ["128k", 128000], ["200k", 200000], ["1M", 1000000]];
     const pos = (t) => Math.max(0, Math.min(1, (Math.log(Math.max(t, MIN)) - Math.log(MIN)) / (Math.log(MAX) - Math.log(MIN)))) * 100;
-    function drawTicks() {
-      for (const [label, v] of LIMITS) {
-        const t = document.createElement("div");
-        t.className = "tick"; t.style.left = pos(v) + "%";
-        t.innerHTML = `<span>${label}</span>`;
-        $("scale").appendChild(t);
-      }
+    const ticks = LIMITS.map(([label, v]) => {
+      const t = document.createElement("div");
+      t.className = "tick" + (label === "128k" ? " l" : label === "200k" ? " r" : ""); t.style.left = pos(v) + "%"; t.innerHTML = `<span>${label}</span>`;
+      $("scale").appendChild(t);
+      return [t, v];
+    });
+    function selectedTokens() {
+      let n = 0;
+      for (const p of state.selected) n += state.byPath.get(p)?.tokens || 0;
+      return n;
     }
     function updateLoad(exact) {
-      let total = 0;
-      for (const p of state.selected) total += state.byPath.get(p)?.tokens || 0;
-      const shown = exact ?? total;
+      const shown = exact ?? selectedTokens();
       $("loadNum").textContent = fmt(shown);
       $("fill").style.width = (shown ? pos(shown) : 0) + "%";
-      const fits = LIMITS.filter(([, v]) => shown <= v).map(([l]) => l);
-      $("fill").classList.toggle("over", !fits.length);
+      const fits = LIMITS.filter(([, v]) => shown <= v);
+      $("fill").classList.toggle("over", shown > 0 && !fits.length);
+      for (const [t, v] of ticks) t.classList.toggle("passed", shown > v);
       const n = state.selected.size;
-      $("loadSub").textContent = !n ? "Select files on the left."
-        : `${n} file${n > 1 ? "s" : ""} · ${exact != null ? "exact after packing" : "before compression"} · ` +
-        (fits.length ? `fits ${fits[0]} context and up` : "too big for one prompt: try Compress or a budget");
+      const sub = $("loadSub");
+      sub.classList.toggle("over", shown > 0 && !fits.length);
+      if (!n) sub.textContent = "Select files on the left.";
+      else if (!fits.length) sub.textContent = "Too big for one prompt. Turn on Compress code or set a token budget.";
+      else sub.textContent = `${exact != null ? "Exact count after packing" : "Before compression"} · fits a ${fits[0][0]} context window and larger`;
+      $("countText").textContent = `${n} of ${state.files.length} files selected`;
     }
 
     // ---------- tree ----------
@@ -682,12 +1189,12 @@
         const parts = f.path.split("/");
         let node = root;
         for (let i = 0; i < parts.length - 1; i++) {
-          const p = parts.slice(0, i + 1).join("/");
-          if (!node.dirs.has(parts[i])) node.dirs.set(parts[i], { name: parts[i], path: p, dirs: new Map(), files: [] });
+          if (!node.dirs.has(parts[i])) node.dirs.set(parts[i], { name: parts[i], path: parts.slice(0, i + 1).join("/"), dirs: new Map(), files: [] });
           node = node.dirs.get(parts[i]);
         }
         node.files.push(f);
       }
+      (function sum(n) { n.tokens = n.files.reduce((s, f) => s + f.tokens, 0); for (const d of n.dirs.values()) n.tokens += sum(d); n.all = filesUnder(n); return n.tokens; })(root);
       return root;
     }
     function filesUnder(node, out = []) {
@@ -695,169 +1202,234 @@
       for (const f of node.files) out.push(f.path);
       return out;
     }
-    let treeRoot = null, maxTok = 1;
+    let treeRoot = null;
     function render() {
       const el = $("tree");
-      el.textContent = "";
       const q = state.filter.toLowerCase();
+      const visible = (p) => !q || p.toLowerCase().includes(q);
+      const total = Math.max(1, treeRoot ? treeRoot.tokens : 1);
+      const w = (n) => Math.sqrt(n / total) * 100; // sqrt keeps small files visible
       const frag = document.createDocumentFragment();
-      const visible = (path) => !q || path.toLowerCase().includes(q);
 
+      function row(cls, depth, html, width) {
+        const r = document.createElement("div");
+        r.className = "row " + cls; r.setAttribute("role", "treeitem");
+        r.style.setProperty("--w", Math.max(0, Math.min(100, width)).toFixed(2) + "%");
+        r.innerHTML = `<span class="indent" style="width:${depth * 16 + 8}px"></span>` + html;
+        return r;
+      }
       function walk(node, depth) {
-        const dirs = [...node.dirs.values()].sort((a, b) => a.name.localeCompare(b.name));
-        for (const d of dirs) {
-          const all = filesUnder(d).filter(visible);
+        for (const d of [...node.dirs.values()].sort((a, b) => a.name.localeCompare(b.name))) {
+          const all = d.all.filter(visible);
           if (!all.length) continue;
           const sel = all.filter((p) => state.selected.has(p)).length;
-          const tok = all.reduce((s, p) => s + state.byPath.get(p).tokens, 0);
-          const row = document.createElement("div");
-          row.className = "row dir"; row.setAttribute("role", "treeitem");
-          const open = q || !state.collapsed.has(d.path);
-          row.setAttribute("aria-expanded", open);
-          row.innerHTML = `<div class="name" style="padding-left:${depth * 16}px"><span class="twisty">${open ? "▾" : "▸"}</span><input type="checkbox" aria-label="Select folder ${d.name}"><span class="label">${esc(d.name)}/</span></div><div class="heat"><i style="width:${Math.min(100, tok / maxTok * 100)}%"></i></div><div class="tok">${fmt(tok)}</div>`;
-          const cb = row.querySelector("input");
+          const open = !!q || !state.collapsed.has(d.path);
+          const r = row("dir" + (sel ? "" : " off"), depth,
+            `<span class="twisty">${open ? "▼" : "▶"}</span><input type="checkbox" aria-label="Select folder ${esc(d.name)}"><span class="name">${esc(d.name)}/</span><span class="bar"><i></i></span><span class="tok">${fmt(d.tokens)}</span>`,
+            w(d.tokens));
+          r.setAttribute("aria-expanded", open);
+          const cb = r.querySelector("input");
           cb.checked = sel === all.length; cb.indeterminate = sel > 0 && sel < all.length;
-          cb.onchange = () => { all.forEach((p) => cb.checked ? state.selected.add(p) : state.selected.delete(p)); render(); updateLoad(); };
-          row.querySelector(".twisty").onclick = () => { state.collapsed.has(d.path) ? state.collapsed.delete(d.path) : state.collapsed.add(d.path); render(); };
-          frag.appendChild(row);
+          cb.onclick = (e) => { e.stopPropagation(); all.forEach((p) => cb.checked ? state.selected.add(p) : state.selected.delete(p)); changed(); };
+          r.onclick = () => { state.collapsed.has(d.path) ? state.collapsed.delete(d.path) : state.collapsed.add(d.path); render(); };
+          frag.appendChild(r);
           if (open) walk(d, depth + 1);
         }
-        for (const f of node.files.sort((a, b) => a.path.localeCompare(b.path))) {
+        for (const f of [...node.files].sort((a, b) => a.path.localeCompare(b.path))) {
           if (!visible(f.path)) continue;
-          const row = document.createElement("div");
-          row.className = "row"; row.setAttribute("role", "treeitem");
-          const name = f.path.split("/").pop();
-          row.innerHTML = `<div class="name" style="padding-left:${depth * 16}px"><span class="twisty"></span><input type="checkbox" aria-label="Select ${esc(f.path)}"><span class="label">${esc(name)}</span>${f.secrets ? `<span class="secret" title="${esc(f.secrets.join(", "))}">secret redacted</span>` : ""}</div><div class="heat"><i style="width:${Math.min(100, f.tokens / maxTok * 100)}%"></i></div><div class="tok">${fmt(f.tokens)}</div>`;
-          const cb = row.querySelector("input");
-          cb.checked = state.selected.has(f.path);
-          cb.onchange = () => { cb.checked ? state.selected.add(f.path) : state.selected.delete(f.path); render(); updateLoad(); };
-          frag.appendChild(row);
+          const on = state.selected.has(f.path);
+          const r = row(on ? "" : "off", depth,
+            `<span class="twisty"></span><input type="checkbox" aria-label="Select ${esc(f.path)}"><span class="dot" style="background:${langColor(f.path)}"></span><span class="name" title="${esc(f.path)}">${esc(f.path.split("/").pop())}</span>${f.secrets ? `<span class="lock" title="Secrets hidden: ${esc(f.secrets.join(", "))}">secret hidden</span>` : ""}<span class="bar"><i></i></span><span class="tok">${fmt(f.tokens)}</span>`,
+            w(f.tokens));
+          const cb = r.querySelector("input");
+          cb.checked = on;
+          const toggle = () => { state.selected.has(f.path) ? state.selected.delete(f.path) : state.selected.add(f.path); changed(); };
+          cb.onclick = (e) => { e.stopPropagation(); toggle(); };
+          r.onclick = toggle;
+          frag.appendChild(r);
         }
       }
-      walk(treeRoot, 0);
+      if (treeRoot) walk(treeRoot, 0);
+      el.textContent = "";
       if (!frag.childNodes.length) {
-        const e = document.createElement("div");
-        e.className = "empty"; e.textContent = state.files.length ? "No file matches this filter." : "No text files found in this folder.";
-        frag.appendChild(e);
-      }
-      el.appendChild(frag);
+        el.innerHTML = `<div class="empty">${state.files.length ? "No file matches “" + esc(state.filter) + "”." : "No text files were found in this folder."}</div>`;
+      } else el.appendChild(frag);
     }
-    function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+    function changed() { render(); updateLoad(); }
 
     async function load(refresh) {
       const d = await api("/api/scan" + (refresh ? "?refresh=1" : ""));
       state.files = d.files; state.byPath = new Map(d.files.map((f) => [f.path, f])); state.name = d.name;
-      if (!refresh) state.selected = new Set(d.files.map((f) => f.path));
-      else state.selected = new Set([...state.selected].filter((p) => state.byPath.has(p)));
-      $("project").textContent = d.root;
-      $("presets").innerHTML = (d.presets || []).map((p) => `<span class="chip">${esc(p)}</span>`).join("");
-      if (!refresh) for (const p of d.prompts) { const o = document.createElement("option"); o.value = p.name; o.textContent = `${p.name}: ${p.desc}`; $("prompt").appendChild(o); }
+      state.selected = refresh ? new Set([...state.selected].filter((p) => state.byPath.has(p))) : new Set(d.files.map((f) => f.path));
+      $("project").textContent = d.root.length > 48 ? "…" + d.root.slice(-47) : d.root; $("project").title = d.root;
+      $("presets").innerHTML = (d.presets || []).map((p) => `<span class="chip">${esc(p)}</span>`).join(" ");
+      document.title = d.name + " · packmyrepo";
+      if (!refresh) { state.prompts = d.prompts || []; renderPrompts(); }
       treeRoot = buildTree();
-      // folder heat bars compare against the biggest top-level item
-      maxTok = Math.max(1, ...[...treeRoot.dirs.values()].map((d) => filesUnder(d).reduce((s, p) => s + state.byPath.get(p).tokens, 0)), ...treeRoot.files.map((f) => f.tokens));
-      render(); updateLoad();
+      changed();
+      if (refresh) toast("Folder scanned again");
+    }
+
+    // ---------- options ----------
+    const FORMAT_HINTS = {
+      xml: "Best for Claude and a safe choice for any AI.", md: "Easy to read. Good for ChatGPT, Gemini and Copilot.",
+      json: "For scripts and your own tools. Uses about 20% more tokens.", txt: "Plain text for very simple tools."
+    };
+    function setFormat(v) {
+      state.format = v;
+      $("format").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === v));
+      $("formatHint").textContent = FORMAT_HINTS[v] || "";
+    }
+    $("format").onclick = (e) => { const b = e.target.closest("button"); if (b) { setFormat(b.dataset.v); savePrefs(); } };
+    function renderPrompts() {
+      const list = [{ name: "", desc: "No instructions are added. Write your own below if you like." }, ...state.prompts];
+      $("prompts").innerHTML = list.map((p) => `<button class="prompt" data-name="${esc(p.name)}" aria-pressed="${p.name === state.prompt}">${p.name ? esc(p.name[0].toUpperCase() + p.name.slice(1)) : "None"}</button>`).join("");
+      const cur = list.find((p) => p.name === state.prompt) || list[0];
+      $("promptDesc").textContent = cur.desc;
+    }
+    $("prompts").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; state.prompt = b.dataset.name; renderPrompts(); savePrefs(); };
+    for (const id of ["compress", "nocomments", "linenums", "edits"]) $(id).onchange = savePrefs;
+    $("budget").oninput = () => { syncQuick(); savePrefs(); };
+    document.querySelectorAll(".quick").forEach((b) => b.onclick = () => {
+      $("budget").value = $("budget").value === b.dataset.budget ? "" : b.dataset.budget; syncQuick(); savePrefs();
+    });
+    function syncQuick() { document.querySelectorAll(".quick").forEach((b) => b.setAttribute("aria-pressed", b.dataset.budget === $("budget").value.trim().toLowerCase())); }
+    function parseBudget(v) {
+      const m = String(v).trim().toLowerCase().match(/^([\d.]+)\s*([km]?)$/);
+      return m ? Math.round(parseFloat(m[1]) * (m[2] === "k" ? 1e3 : m[2] === "m" ? 1e6 : 1)) : 0;
     }
 
     // ---------- pack ----------
-    function parseBudget(v) {
-      const m = String(v).trim().toLowerCase().match(/^([\d.]+)\s*([km]?)$/);
-      if (!m) return 0;
-      return Math.round(parseFloat(m[1]) * (m[2] === "k" ? 1e3 : m[2] === "m" ? 1e6 : 1));
-    }
+    function setStatus(t, err) { const s = $("status"); s.textContent = t; s.classList.toggle("err", !!err); }
     async function pack() {
       if (!state.selected.size) { setStatus("Select at least one file first.", true); return; }
-      $("go").disabled = true; setStatus("Packing…");
+      if ($("budget").value.trim() && !parseBudget($("budget").value)) { setStatus("Budget should look like 50000 or 100k.", true); return; }
+      const go = $("go");
+      go.disabled = true; go.textContent = "Packing…"; setStatus("");
       try {
         const d = await api("/api/pack", {
           paths: [...state.selected], format: state.format,
           compress: $("compress").checked, removeComments: $("nocomments").checked, lineNumbers: $("linenums").checked,
-          prompt: $("prompt").value, ask: $("ask").value, edits: $("edits").checked, budget: parseBudget($("budget").value),
+          prompt: state.prompt, ask: $("ask").value, edits: $("edits").checked, budget: parseBudget($("budget").value),
         });
         state.output = d.output; state.ext = d.ext;
         updateLoad(d.tokens);
         const m = d.modes || {};
-        const parts = [`${fmt(d.tokens)} tokens`];
-        if (m.compressed) parts.push(`${m.compressed} compressed`);
-        if (m.truncated) parts.push(`${m.truncated} truncated`);
-        if (m.omitted) parts.push(`${m.omitted} omitted`);
+        const packed = (m.full || 0) + (m.compressed || 0) + (m.truncated || 0);
+        $("stats").innerHTML = [[fmt(d.tokens), "tokens"], [packed, "files"], [m.compressed || 0, "compressed"], [m.omitted || 0, "left out"]]
+          .map(([v, l]) => `<div><b>${v}</b>${l}</div>`).join("");
+        $("notes").innerHTML = (d.notes || []).map((n) => `<li>${esc(n)}</li>`).join("");
+        $("preview").textContent = d.output.length > 150000 ? d.output.slice(0, 150000) + "\n\n… preview ends here. Copy or download to get everything." : d.output;
+        $("result").hidden = false;
+        $("download").disabled = false;
         let copied = false;
         try { await navigator.clipboard.writeText(d.output); copied = true; } catch (_) { }
-        setStatus((copied ? "Copied. " : "Packed. ") + parts.join(", ") + ((d.notes || []).length ? ". " + d.notes.join(" ") : ""));
-        const pv = $("preview");
-        pv.hidden = false;
-        pv.textContent = d.output.length > 200000 ? d.output.slice(0, 200000) + "\n\n… preview cut here. Copy or download for the full text." : d.output;
-        $("download").disabled = false;
+        if (copied) { toast(`Copied ${fmt(d.tokens)} tokens. Paste it into your AI chat.`); setStatus("Copied to clipboard"); }
+        else setStatus("Packed. Your browser blocked copying, use Download.");
+        const sc = document.querySelector(".side-scroll");
+        sc.scrollTo({ top: $("result").offsetTop - sc.offsetTop - 8, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
       } catch (e) { setStatus(e.message, true); }
-      $("go").disabled = false;
+      go.disabled = false; go.textContent = "Pack and copy";
     }
-    function setStatus(t, err) { const s = $("status"); s.textContent = t; s.classList.toggle("err", !!err); }
-
+    $("go").onclick = pack;
+    $("copyAgain").onclick = async () => {
+      try { await navigator.clipboard.writeText(state.output); toast("Copied again"); }
+      catch (_) { toast("Your browser blocked copying. Use Download instead."); }
+    };
     $("download").onclick = () => {
-      const blob = new Blob([state.output], { type: "text/plain" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = `${state.name}-packmyrepo${state.ext}`; a.click();
+      a.href = URL.createObjectURL(new Blob([state.output], { type: "text/plain" }));
+      a.download = `${state.name}-packmyrepo${state.ext}`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     };
-    $("go").onclick = pack;
-    $("all").onclick = () => { state.files.forEach((f) => { if (!state.filter || f.path.toLowerCase().includes(state.filter.toLowerCase())) state.selected.add(f.path); }); render(); updateLoad(); };
-    $("none").onclick = () => { state.selected.clear(); render(); updateLoad(); };
+
+    // ---------- file actions ----------
+    $("all").onclick = () => { state.files.forEach((f) => { if (!state.filter || f.path.toLowerCase().includes(state.filter.toLowerCase())) state.selected.add(f.path); }); changed(); };
+    $("none").onclick = () => { state.selected.clear(); changed(); };
     $("refresh").onclick = () => load(true).catch((e) => setStatus(e.message, true));
     $("imports").onclick = async () => {
-      if (!state.selected.size) { setStatus("Select a file first, then add what it imports.", true); return; }
-      const d = await api("/api/related", { paths: [...state.selected], depth: 0 });
-      const before = state.selected.size;
-      d.paths.forEach((p) => state.selected.add(p));
-      render(); updateLoad();
-      setStatus(`Added ${state.selected.size - before} imported file(s).`);
+      if (!state.selected.size) { toast("Select a file first, then add what it imports"); return; }
+      try {
+        const d = await api("/api/related", { paths: [...state.selected], depth: 0 });
+        const before = state.selected.size;
+        d.paths.forEach((p) => state.selected.add(p));
+        changed();
+        toast(state.selected.size > before ? `Added ${state.selected.size - before} imported file(s)` : "Nothing new: all imports are already selected");
+      } catch (e) { setStatus(e.message, true); }
     };
     $("search").oninput = (e) => { state.filter = e.target.value; render(); };
-    $("format").onclick = (e) => {
-      const b = e.target.closest("button"); if (!b) return;
-      state.format = b.dataset.v;
-      $("format").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b));
-    };
 
-    // ---------- tabs ----------
-    document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
-      document.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-selected", x === t));
-      $("view-pack").hidden = t.dataset.view !== "pack";
-      $("view-apply").hidden = t.dataset.view !== "apply";
+    // ---------- tabs and keys ----------
+    function showView(v) {
+      document.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-selected", x.dataset.view === v));
+      $("view-pack").hidden = v !== "pack"; $("view-apply").hidden = v !== "apply";
+    }
+    document.querySelectorAll(".tab").forEach((t) => t.onclick = () => showView(t.dataset.view));
+    document.addEventListener("keydown", (e) => {
+      const typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+      if (e.key === "/" && !typing && !$("view-pack").hidden) { e.preventDefault(); $("search").focus(); }
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        $("view-pack").hidden ? previewApply() : pack();
+      }
+      if (e.key === "Escape" && document.activeElement === $("search")) { $("search").value = ""; state.filter = ""; render(); $("search").blur(); }
     });
 
     // ---------- apply ----------
     let lastPlan = [];
+    function setApplyMsg(t, err) { const m = $("applyMsg"); m.textContent = t; m.classList.toggle("err", !!err); }
     async function previewApply() {
-      $("applyMsg").textContent = ""; $("applyMsg").classList.remove("err");
+      setApplyMsg("");
+      if (!$("answer").value.trim()) { setApplyMsg("Paste the AI's answer first.", true); return; }
       try {
         const d = await api("/api/apply/preview", { text: $("answer").value });
         lastPlan = d.changes || [];
-        const rows = lastPlan.map((c) => `<tr><td><span class="kind ${c.kind}">${c.kind}</span></td><td class="path">${esc(c.path)}</td><td>${c.added ? `<span class="add">+${c.added}</span> ` : ""}${c.removed ? `<span class="rem">-${c.removed}</span>` : ""}</td><td class="warn">${c.note ? esc(c.note) : ""}</td></tr>`).join("");
-        $("changes").innerHTML = rows;
-        const doable = lastPlan.filter((c) => ["new", "modify", "delete"].includes(c.kind) && (!c.partial || $("force").checked));
-        $("runApply").disabled = !doable.length;
-        $("applyMsg").textContent = lastPlan.length ? `${doable.length} change(s) ready.` : "No file blocks found. Pack with “Ask for editable answer” so the AI replies in the right format.";
-      } catch (e) { $("applyMsg").textContent = e.message; $("applyMsg").classList.add("err"); }
+        renderPlan();
+      } catch (e) { setApplyMsg(e.message, true); }
+    }
+    function renderPlan() {
+      const body = $("planBody");
+      if (!lastPlan.length) {
+        body.innerHTML = `<div class="plan-empty">No files found in this answer. Turn on “Ask for an answer I can apply” when packing, so the AI replies in a format packmyrepo understands.</div>`;
+        $("runApply").disabled = true; $("forceWrap").hidden = true; return;
+      }
+      body.innerHTML = lastPlan.map((c) => `<div class="change"><span class="kind ${c.kind}">${c.kind === "unchanged" ? "same" : c.kind === "invalid" ? "skip" : c.kind}</span>
+    <span class="path">${esc(c.path)}</span><span class="diff">${c.added ? `<span class="add">+${c.added}</span> ` : ""}${c.removed ? `<span class="rem">−${c.removed}</span>` : ""}</span>
+    ${c.note ? `<span class="note">${esc(c.note)}</span>` : ""}</div>`).join("");
+      const partial = lastPlan.some((c) => c.partial);
+      $("forceWrap").hidden = !partial;
+      const doable = lastPlan.filter((c) => ["new", "modify", "delete"].includes(c.kind) && (!c.partial || $("force").checked));
+      $("runApply").disabled = !doable.length;
+      $("runApply").textContent = doable.length ? `Apply ${doable.length} change${doable.length > 1 ? "s" : ""}` : "Apply changes";
     }
     $("previewApply").onclick = previewApply;
-    $("force").onchange = () => { if (lastPlan.length) previewApply(); };
+    $("force").onchange = renderPlan;
+    $("paste").onclick = async () => {
+      try { $("answer").value = await navigator.clipboard.readText(); previewApply(); }
+      catch (_) { setApplyMsg("Your browser blocked reading the clipboard. Paste with Ctrl+V instead.", true); }
+    };
     $("runApply").onclick = async () => {
       try {
         const d = await api("/api/apply/run", { text: $("answer").value, force: $("force").checked });
-        $("applyMsg").textContent = `Applied ${d.applied} change(s). Backup saved in ${d.backup}.`;
+        setApplyMsg(`Applied ${d.applied} change${d.applied === 1 ? "" : "s"}. Backup saved in ${d.backup}.`);
+        toast("Changes applied");
         $("runApply").disabled = true;
         load(true);
-      } catch (e) { $("applyMsg").textContent = e.message; $("applyMsg").classList.add("err"); }
+      } catch (e) { setApplyMsg(e.message, true); }
     };
     $("undo").onclick = async () => {
       if (!confirm("Restore the files from the last apply?")) return;
       try {
         const d = await api("/api/undo", {});
-        $("applyMsg").textContent = "Undone. " + d.report.split("\n").length + " file(s) restored or removed.";
-        $("changes").innerHTML = ""; load(true);
-      } catch (e) { $("applyMsg").textContent = e.message; $("applyMsg").classList.add("err"); }
+        setApplyMsg(`Undone: ${d.report.split("\n").filter(Boolean).length} file(s) restored or removed.`);
+        toast("Last apply undone");
+        lastPlan = []; $("planBody").innerHTML = ""; load(true);
+      } catch (e) { setApplyMsg(e.message, true); }
     };
 
-    drawTicks();
+    loadPrefs();
+    setFormat(state.format);
+    syncQuick();
     load(false).catch((e) => { $("tree").innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
   </script>
 </body>
