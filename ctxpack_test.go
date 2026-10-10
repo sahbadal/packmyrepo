@@ -125,7 +125,7 @@ func TestParseSize(t *testing.T) {
 func TestNoiseFiles(t *testing.T) {
 	m := &Matcher{}
 	m.AddLines(noiseFiles, "")
-	for _, p := range []string{".gitignore", "sub/.gitignore", "LICENSE", "CHANGELOG.md", ".vscode/settings.json", ".prettierrc.json"} {
+	for _, p := range []string{".gitignore", "sub/.gitignore", "LICENSE", "CHANGELOG.md", ".vscode/settings.json", ".prettierrc.json", "client/src/logo.svg", "server/uploads/011b94"} {
 		if !m.MatchPath(p) {
 			t.Errorf("%s should be noise", p)
 		}

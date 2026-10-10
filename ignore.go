@@ -218,4 +218,5 @@ var noiseFiles = []string{
 	"CHANGELOG*", "CODE_OF_CONDUCT*", "CONTRIBUTING*", "SECURITY.md",
 	".vscode/", ".github/ISSUE_TEMPLATE/", ".github/PULL_REQUEST_TEMPLATE*", ".github/FUNDING.yml",
 	".husky/_/",
+	"*.svg", "uploads/", "public/uploads/", "storage/uploads/",
 }

@@ -182,7 +182,7 @@ func Scan(o Options) (*Project, error) {
 		if m.Match(rel, false) && !isScopePath(rel, o.Scopes) {
 			return nil
 		}
-		if noise.MatchPath(rel) && (incl == nil || !incl.Match(rel, false)) {
+		if noise.MatchPath(rel) && !isScopePath(rel, o.Scopes) && (incl == nil || !incl.Match(rel, false)) {
 			p.Noise++
 			return nil
 		}
