@@ -76,7 +76,7 @@ COMMON
 
 PACK FLAGS
   -o, --output FILE        output file (default ctxpack-output.<ext>)
-  -f, --format FMT         xml | md | txt (default xml)
+  -f, --format FMT         xml | md | json | txt (default xml)
       --include GLOBS      only these (comma separated, gitignore syntax)
       --ignore GLOBS       skip these too
   -c, --compress           keep code structure, drop function bodies
@@ -271,9 +271,9 @@ func runPack(args []string) error {
 	o.Budget, o.Split = int(budget), int(split)
 	o.Format = strings.ToLower(o.Format)
 	switch o.Format {
-	case "xml", "md", "markdown", "txt", "plain", "text":
+	case "xml", "md", "markdown", "txt", "plain", "text", "json":
 	default:
-		return fmt.Errorf("unknown format %q (use xml, md or txt)", o.Format)
+		return fmt.Errorf("unknown format %q (use xml, md, json or txt)", o.Format)
 	}
 	setTokenizer(o.Tokenizer)
 
@@ -396,6 +396,8 @@ func extFor(format string) string {
 		return ".md"
 	case "txt", "plain", "text":
 		return ".txt"
+	case "json":
+		return ".json"
 	}
 	return ".xml"
 }

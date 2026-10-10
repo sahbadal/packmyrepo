@@ -55,6 +55,17 @@ Run `ctxpack help` for every flag and `ctxpack prompts` for the prompt templates
 - **Zero config**: detects Node, Python, Go, Rust, Flutter, Java, PHP, Ruby, .NET, Terraform and ignores their build folders.
 - **Browser UI** (`ctxpack ui`): file tree with token heat bars, context-window gauge, one-click pack and copy, and an apply screen with preview.
 
+## Which format should I use?
+
+| Format        | Flag      | Best for                                                                          |
+| ------------- | --------- | --------------------------------------------------------------------------------- |
+| XML (default) | `-f xml`  | Claude, and a safe choice for any AI. Clear `<file path="...">` boundaries.       |
+| Markdown      | `-f md`   | ChatGPT, Gemini, Copilot chat, and reading it yourself.                           |
+| JSON          | `-f json` | Scripts, APIs and your own tools. Uses about 20% more tokens because of escaping. |
+| Plain text    | `-f txt`  | Very simple tools or models that get confused by markup.                          |
+
+Not sure? Keep the default XML.
+
 ## Ignoring files
 
 Rules are read in this order: built-in defaults, project presets, `.ctxpackignore`, `.gitignore` (nested too), then `--ignore`. All use gitignore syntax.

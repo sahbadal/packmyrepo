@@ -241,6 +241,8 @@ func Render(in RenderInput, tree string) string {
 		if in.Prompt != "" && (in.Parts <= 1 || in.Part == in.Parts) {
 			w("\n", sep, "\nInstructions\n", sep, "\n", in.Prompt, "\n")
 		}
+	case "json":
+		return renderJSON(in, tree, sum, content, first)
 	default: // xml
 		w("<codebase name=\"", xmlAttr(in.Project), "\" packed_by=\"ctxpack\">\n")
 		if first {
@@ -328,7 +330,7 @@ func renderAll(base RenderInput, maxPart int) ([]string, int) {
 // measure counts the tokens of a render without tokenising every file again:
 // wrapper text is counted once and file tokens are already known.
 func measure(in RenderInput, tree string) int {
-	if in.LineNums {
+	if in.LineNums || in.Format == "json" { // JSON escaping changes the token count
 		return countTokens(Render(in, tree))
 	}
 	in.Total = 999999 // reserve the width of the number in the summary line

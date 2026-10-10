@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -157,5 +158,30 @@ func TestScopes(t *testing.T) {
 	}
 	if !inScope("anything", false, nil) {
 		t.Error("no scopes must mean everything")
+	}
+}
+
+func TestJSONOutput(t *testing.T) {
+	files := []*File{
+		{Path: "a.go", Lang: "go", Content: "package a\n// \"quote\" <tag>\n", Tokens: 5},
+		{Path: "b.go", Mode: ModeOmitted},
+	}
+	in := RenderInput{Project: "demo", Files: files, Format: "json", Prompt: "explain"}
+	out := Render(in, buildTree(files))
+	var got struct {
+		Project      string   `json:"project"`
+		Omitted      []string `json:"omitted_files"`
+		Instructions string   `json:"instructions"`
+		Files        []struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		} `json:"files"`
+	}
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, out)
+	}
+	if got.Project != "demo" || len(got.Files) != 1 || got.Files[0].Path != "a.go" ||
+		!strings.Contains(got.Files[0].Content, `"quote" <tag>`) || len(got.Omitted) != 1 || got.Instructions != "explain" {
+		t.Fatalf("unexpected JSON: %+v", got)
 	}
 }
