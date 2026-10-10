@@ -132,6 +132,7 @@ if (publish) {
     }
     console.log(`publishing ${pkg.name}@${version}`);
     const flags = ["publish", "--access", "public"];
+    if (process.env.GITHUB_ACTIONS === "true") flags.push("--provenance"); // signed link to the exact commit
     if (dryRun) flags.push("--dry-run");
     if (version.includes("-")) flags.push("--tag", "next"); // 0.2.0-beta.1 must not become "latest"
     execFileSync("npm", flags, {
