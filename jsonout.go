@@ -33,7 +33,7 @@ type jsonPack struct {
 func renderJSON(in RenderInput, tree string, sum []string, content func(*File) string, first bool) string {
 	out := jsonPack{
 		Project:  in.Project,
-		PackedBy: "ctxpack " + version,
+		PackedBy: "packmyrepo " + version,
 		Summary:  sum,
 		Files:    []jsonFile{},
 		GitDiff:  in.GitDiff,

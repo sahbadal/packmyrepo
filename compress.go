@@ -256,7 +256,7 @@ func truncateData(src string, keep int) (string, bool) {
 		return src, false
 	}
 	rest := len(lines) - keep
-	return strings.Join(lines[:keep], "\n") + "\n... (" + itoa(rest) + " more lines truncated by ctxpack)", true
+	return strings.Join(lines[:keep], "\n") + "\n... (" + itoa(rest) + " more lines truncated by packmyrepo)", true
 }
 
 var dataLangs = map[string]bool{"json": true, "csv": true, "yaml": true, "xml": true, "text": true, "markdown": true, "mdx": true, "rst": true, "sql": true}

@@ -1,4 +1,4 @@
-module github.com/sahbadal/ctxpack
+module github.com/sahbadal/packmyrepo
 
 go 1.21
 

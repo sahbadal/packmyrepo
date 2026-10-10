@@ -30,7 +30,7 @@ func openTokenCache(root string) {
 	tokenCache.Lock()
 	defer tokenCache.Unlock()
 	tokenCache.enabled = true
-	tokenCache.path = filepath.Join(dir, "ctxpack", hex.EncodeToString(h[:8])+".json")
+	tokenCache.path = filepath.Join(dir, "packmyrepo", hex.EncodeToString(h[:8])+".json")
 	tokenCache.old = map[string]int{}
 	tokenCache.used = map[string]int{}
 	if data, err := os.ReadFile(tokenCache.path); err == nil {

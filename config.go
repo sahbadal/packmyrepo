@@ -13,7 +13,7 @@ import (
 
 // configName is the per-project settings file. Command-line flags always win
 // over it, so it only sets the defaults for a project.
-const configName = "ctxpack.json"
+const configName = "packmyrepo.json"
 
 // sizeValue accepts 50000, "50k", "1.5m" or "1MB" in JSON.
 type sizeValue int64
@@ -60,7 +60,7 @@ type Config struct {
 	Tree           *bool      `json:"tree,omitempty"`
 }
 
-// loadConfig reads root/ctxpack.json. A missing file is not an error; a file
+// loadConfig reads root/packmyrepo.json. A missing file is not an error; a file
 // with a typo in a key is, so mistakes do not get silently ignored.
 func loadConfig(root string) (*Config, string, error) {
 	p := filepath.Join(root, configName)
@@ -88,7 +88,7 @@ func friendlyJSONError(data []byte, err error) error {
 	}
 	msg := err.Error()
 	if strings.HasPrefix(msg, "json: unknown field ") {
-		return fmt.Errorf("unknown setting %s (run 'ctxpack init' to see the valid ones)", strings.TrimPrefix(msg, "json: unknown field "))
+		return fmt.Errorf("unknown setting %s (run 'packmyrepo init' to see the valid ones)", strings.TrimPrefix(msg, "json: unknown field "))
 	}
 	return err
 }
@@ -154,7 +154,7 @@ func setFlags(fs *flag.FlagSet) map[string]bool {
 	return set
 }
 
-// runInit writes a starter ctxpack.json for the current project.
+// runInit writes a starter packmyrepo.json for the current project.
 func runInit(args []string) error {
 	fs := newFlagSet("init")
 	var force bool
@@ -187,6 +187,6 @@ func runInit(args []string) error {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "%s created %s\n", green("✓"), p)
-	fmt.Fprintln(os.Stderr, dim("  Edit it, then just run 'ctxpack'. Flags you type still win over this file."))
+	fmt.Fprintln(os.Stderr, dim("  Edit it, then just run 'packmyrepo'. Flags you type still win over this file."))
 	return nil
 }

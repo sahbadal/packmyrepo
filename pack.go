@@ -124,7 +124,7 @@ func Scan(o Options) (*Project, error) {
 			m.AddLines(pr.ignores, "")
 		}
 	}
-	m.AddFile(filepath.Join(root, ".ctxpackignore"), "")
+	m.AddFile(filepath.Join(root, ".packmyrepoignore"), "")
 	for _, ig := range o.Ignore {
 		m.Add(ig, "")
 	}
@@ -170,7 +170,7 @@ func Scan(o Options) (*Project, error) {
 			}
 			if !o.NoGitignore {
 				m.AddFile(filepath.Join(abs, ".gitignore"), rel)
-				m.AddFile(filepath.Join(abs, ".ctxpackignore"), rel)
+				m.AddFile(filepath.Join(abs, ".packmyrepoignore"), rel)
 			}
 			return nil
 		}

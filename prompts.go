@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// editFormat tells the AI how to return changed files so `ctxpack apply` can
+// editFormat tells the AI how to return changed files so `packmyrepo apply` can
 // write them back into the project.
 const editFormat = `When you change or create files, return each one in full (never "rest of code unchanged") inside this exact format so the changes can be applied automatically:
 

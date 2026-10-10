@@ -177,7 +177,7 @@ func safeRel(p string) (string, error) {
 	if c == ".." || strings.HasPrefix(c, "../") {
 		return "", errors.New("path leaves the project folder")
 	}
-	if c == ".git" || strings.HasPrefix(c, ".git/") || strings.HasPrefix(c, ".ctxpack/") {
+	if c == ".git" || strings.HasPrefix(c, ".git/") || strings.HasPrefix(c, ".packmyrepo/") {
 		return "", errors.New("protected folder")
 	}
 	return c, nil
@@ -271,7 +271,7 @@ type backupManifest struct {
 // Partial files are skipped unless force is set.
 func applyChanges(root string, plan []Change, force bool) (backupDir string, applied int, err error) {
 	stamp := time.Now().Format("20060102-150405.000")
-	backupDir = filepath.Join(root, ".ctxpack", "backups", stamp)
+	backupDir = filepath.Join(root, ".packmyrepo", "backups", stamp)
 	man := backupManifest{Time: time.Now().Format(time.RFC3339)}
 	backup := func(rel string) error {
 		src := filepath.Join(root, filepath.FromSlash(rel))
@@ -340,7 +340,7 @@ func applyChanges(root string, plan []Change, force bool) (backupDir string, app
 	return backupDir, applied, nil
 }
 
-// ensureGitignored adds .ctxpack/ to .gitignore when the project uses git.
+// ensureGitignored adds .packmyrepo/ to .gitignore when the project uses git.
 func ensureGitignored(root string) {
 	if _, err := os.Stat(filepath.Join(root, ".git")); err != nil {
 		return
@@ -348,7 +348,7 @@ func ensureGitignored(root string) {
 	gi := filepath.Join(root, ".gitignore")
 	data, _ := os.ReadFile(gi)
 	for _, l := range strings.Split(string(data), "\n") {
-		if t := strings.TrimSpace(l); t == ".ctxpack/" || t == ".ctxpack" || t == "/.ctxpack/" {
+		if t := strings.TrimSpace(l); t == ".packmyrepo/" || t == ".packmyrepo" || t == "/.packmyrepo/" {
 			return
 		}
 	}
@@ -361,12 +361,12 @@ func ensureGitignored(root string) {
 	if len(data) > 0 && !strings.HasSuffix(string(data), "\n") {
 		prefix = "\n"
 	}
-	fmt.Fprint(f, prefix+".ctxpack/\n")
+	fmt.Fprint(f, prefix+".packmyrepo/\n")
 }
 
 // undoLast restores the most recent backup.
 func undoLast(root string) (string, error) {
-	base := filepath.Join(root, ".ctxpack", "backups")
+	base := filepath.Join(root, ".packmyrepo", "backups")
 	entries, err := os.ReadDir(base)
 	if err != nil {
 		return "", errors.New("nothing to undo (no backups found)")

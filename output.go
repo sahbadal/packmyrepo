@@ -179,7 +179,7 @@ func Render(in RenderInput, tree string) string {
 
 	switch in.Format {
 	case "md", "markdown":
-		w("# ", in.Project, " (packed by ctxpack)\n\n")
+		w("# ", in.Project, " (packed by packmyrepo)\n\n")
 		if first {
 			w("This file contains the codebase in a single document for AI analysis.\n\n")
 		}
@@ -215,7 +215,7 @@ func Render(in RenderInput, tree string) string {
 		}
 	case "txt", "plain", "text":
 		sep := strings.Repeat("=", 64)
-		w(sep, "\n", in.Project, " (packed by ctxpack)\n", sep, "\n")
+		w(sep, "\n", in.Project, " (packed by packmyrepo)\n", sep, "\n")
 		for _, l := range sum {
 			w(l, "\n")
 		}
@@ -244,7 +244,7 @@ func Render(in RenderInput, tree string) string {
 	case "json":
 		return renderJSON(in, tree, sum, content, first)
 	default: // xml
-		w("<codebase name=\"", xmlAttr(in.Project), "\" packed_by=\"ctxpack\">\n")
+		w("<codebase name=\"", xmlAttr(in.Project), "\" packed_by=\"packmyrepo\">\n")
 		if first {
 			w("This is the whole codebase packed into one document so an AI can read it.\n")
 		}

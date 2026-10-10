@@ -1,4 +1,4 @@
-ctxpack
+packmyrepo
 dist/
-ctxpack-output.*
-.ctxpack/
+packmyrepo-output.*
+.packmyrepo/

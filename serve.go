@@ -60,7 +60,7 @@ func runServe(args []string) error {
 	o.Root = abs
 
 	s := &server{opts: o}
-	fmt.Fprintf(os.Stderr, "%s scanning %s ...\n", dim("ctxpack"), abs)
+	fmt.Fprintf(os.Stderr, "%s scanning %s ...\n", dim("packmyrepo"), abs)
 	if err := s.rescan(); err != nil {
 		return err
 	}

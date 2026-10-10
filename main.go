@@ -47,7 +47,7 @@ func main() {
 			fmt.Printf("  %-10s %s\n", n, promptTemplates[n].desc)
 		}
 	case "version":
-		fmt.Println("ctxpack", version, runtime.GOOS+"/"+runtime.GOARCH)
+		fmt.Println("packmyrepo", version, runtime.GOOS+"/"+runtime.GOARCH)
 	case "help":
 		fmt.Print(helpText)
 	}
@@ -57,29 +57,29 @@ func main() {
 	}
 }
 
-const helpText = `ctxpack - pack your codebase into one AI-ready file, and apply the AI's answer back.
+const helpText = `packmyrepo - pack your codebase into one AI-ready file, and apply the AI's answer back.
 
 USAGE
-  ctxpack [path|git-url] [flags]     pack a project (default: current folder)
-  ctxpack ui [path]                  open the visual file picker in your browser
-  ctxpack apply [file|-]             write files from an AI response into the project
-  ctxpack undo                       undo the last apply
-  ctxpack init                       create ctxpack.json with project settings
-  ctxpack prompts                    list built-in prompt templates
+  packmyrepo [path|git-url] [flags]     pack a project (default: current folder)
+  packmyrepo ui [path]                  open the visual file picker in your browser
+  packmyrepo apply [file|-]             write files from an AI response into the project
+  packmyrepo undo                       undo the last apply
+  packmyrepo init                       create packmyrepo.json with project settings
+  packmyrepo prompts                    list built-in prompt templates
 
 COMMON
-  ctxpack                            pack everything -> ctxpack-output.xml
-  ctxpack --copy                     ...and copy it to the clipboard
-  ctxpack -c                         compress: keep signatures, drop function bodies
-  ctxpack --budget 100k              fit into 100k tokens automatically
-  ctxpack --entry src/app.ts         only this file and what it imports
-  ctxpack --diff                     only files you changed (vs HEAD)
-  ctxpack --since main --with-diff   files changed since main, plus the diff
-  ctxpack -p review                  add a ready-made prompt (see 'ctxpack prompts')
-  ctxpack user/repo                  pack a GitHub repo (shallow clone)
+  packmyrepo                            pack everything -> packmyrepo-output.xml
+  packmyrepo --copy                     ...and copy it to the clipboard
+  packmyrepo -c                         compress: keep signatures, drop function bodies
+  packmyrepo --budget 100k              fit into 100k tokens automatically
+  packmyrepo --entry src/app.ts         only this file and what it imports
+  packmyrepo --diff                     only files you changed (vs HEAD)
+  packmyrepo --since main --with-diff   files changed since main, plus the diff
+  packmyrepo -p review                  add a ready-made prompt (see 'packmyrepo prompts')
+  packmyrepo user/repo                  pack a GitHub repo (shallow clone)
 
 PACK FLAGS
-  -o, --output FILE        output file (default ctxpack-output.<ext>)
+  -o, --output FILE        output file (default packmyrepo-output.<ext>)
   -f, --format FMT         xml | md | json | txt (default xml)
       --include GLOBS      only these (comma separated, gitignore syntax)
       --ignore GLOBS       skip these too
@@ -95,7 +95,7 @@ PACK FLAGS
       --log N              include the last N commit messages
   -p, --prompt NAME|TEXT   template name or your own instruction
       --ask TEXT           extra request added to the prompt
-      --edits              ask the AI to answer in the 'ctxpack apply' format
+      --edits              ask the AI to answer in the 'packmyrepo apply' format
       --copy               copy the result to the clipboard
       --stdout             print the result instead of writing a file
       --top N              show the N biggest files (default 5)
@@ -104,7 +104,7 @@ PACK FLAGS
       --no-gitignore       do not read .gitignore files
       --keep-noise         keep config files like .gitignore, LICENSE, .prettierrc
       --no-cache           do not reuse token counts from the last run
-      --no-config          ignore ctxpack.json
+      --no-config          ignore packmyrepo.json
       --no-default-ignore  do not use built-in ignore rules and presets
       --no-security        do not redact secrets
       --tokenizer NAME     o200k_base (default) | cl100k_base
@@ -175,7 +175,7 @@ func parseSize(v string) (int64, error) {
 	return int64(f * mult), nil
 }
 
-// reorder lets flags appear after positional args: `ctxpack . -c`.
+// reorder lets flags appear after positional args: `packmyrepo . -c`.
 func reorder(fs *flag.FlagSet, args []string) []string {
 	var flags, pos []string
 	for i := 0; i < len(args); i++ {
@@ -221,7 +221,7 @@ func parseFlags(fs *flag.FlagSet, args []string) error {
 		os.Exit(0)
 	}
 	if err != nil {
-		return fmt.Errorf("%v (run 'ctxpack help')", err)
+		return fmt.Errorf("%v (run 'packmyrepo help')", err)
 	}
 	return nil
 }
@@ -301,7 +301,7 @@ func runPack(args []string) error {
 		projectName = repoNameFromURL(url)
 		o.Root = dir
 		if o.Output == "" && !o.Stdout {
-			o.Output = projectName + "-ctxpack" + extFor(o.Format)
+			o.Output = projectName + "-packmyrepo" + extFor(o.Format)
 		}
 	} else {
 		root, scopes, err := resolveTargets(fs.Args())
@@ -333,7 +333,7 @@ func runPack(args []string) error {
 	}
 	setTokenizer(o.Tokenizer)
 	if o.Output == "" {
-		o.Output = "ctxpack-output" + extFor(o.Format) // written to the current folder
+		o.Output = "packmyrepo-output" + extFor(o.Format) // written to the current folder
 	}
 
 	p, err := Scan(o)
@@ -456,7 +456,7 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 		}
 	}
 	fmt.Fprintln(e)
-	fmt.Fprintf(e, "%s %s\n", bold("ctxpack"), dim("v"+version))
+	fmt.Fprintf(e, "%s %s\n", bold("packmyrepo"), dim("v"+version))
 	fmt.Fprintf(e, "  %-12s %s\n", "project", p.Root)
 	if len(o.Scopes) > 0 {
 		fmt.Fprintf(e, "  %-12s %s\n", "only", strings.Join(o.Scopes, ", "))
@@ -607,7 +607,7 @@ func runApply(args []string) error {
 	default:
 		t, err := readClipboard()
 		if err != nil {
-			return fmt.Errorf("%v; pass a file instead: ctxpack apply answer.md", err)
+			return fmt.Errorf("%v; pass a file instead: packmyrepo apply answer.md", err)
 		}
 		text = t
 		fmt.Println(dim("reading the AI response from the clipboard"))
@@ -669,7 +669,7 @@ func runApply(args []string) error {
 		return err
 	}
 	rel, _ := filepath.Rel(root, backup)
-	fmt.Printf("%s applied %d change(s). Backup: %s  (undo with: ctxpack undo)\n", green("✓"), n, rel)
+	fmt.Printf("%s applied %d change(s). Backup: %s  (undo with: packmyrepo undo)\n", green("✓"), n, rel)
 	return nil
 }
 

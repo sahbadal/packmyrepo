@@ -102,7 +102,7 @@ func cloneRemote(url, branch string) (string, error) {
 	if m := regexp.MustCompile(`^(https://github\.com/[^/]+/[^/]+)/tree/([^/]+)`).FindStringSubmatch(url); m != nil {
 		url, branch = m[1], m[2]
 	}
-	dir, err := os.MkdirTemp("", "ctxpack-*")
+	dir, err := os.MkdirTemp("", "packmyrepo-*")
 	if err != nil {
 		return "", err
 	}

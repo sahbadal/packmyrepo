@@ -1,6 +1,6 @@
 # Third-party notices
 
-ctxpack includes the following open-source libraries. Their licenses require these notices to ship with the source and binaries.
+packmyrepo includes the following open-source libraries. Their licenses require these notices to ship with the source and binaries.
 The tokenizer data embedded by tiktoken-go-loader comes from OpenAI's tiktoken project (MIT License).
 
 ## github.com/pkoukk/tiktoken-go (MIT)

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ctxpack</title>
+  <title>packmyrepo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;600&display=swap"
@@ -550,7 +550,7 @@
 
 <body>
   <header>
-    <div class="brand">ctxpack</div>
+    <div class="brand">packmyrepo</div>
     <div class="project" id="project">loading…</div>
     <div class="presets" id="presets"></div>
     <nav class="tabs" role="tablist">
@@ -645,7 +645,7 @@
 
     async function api(path, body) {
       const res = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json().catch(() => ({ error: "Bad response from ctxpack" }));
+      const data = await res.json().catch(() => ({ error: "Bad response from packmyrepo" }));
       if (!res.ok) throw new Error(data.error || res.statusText);
       return data;
     }
@@ -795,7 +795,7 @@
     $("download").onclick = () => {
       const blob = new Blob([state.output], { type: "text/plain" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = `${state.name}-ctxpack${state.ext}`; a.click();
+      a.href = URL.createObjectURL(blob); a.download = `${state.name}-packmyrepo${state.ext}`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     };
     $("go").onclick = pack;

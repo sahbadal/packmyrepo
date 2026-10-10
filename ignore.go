@@ -198,12 +198,12 @@ func baseName(p string) string {
 var defaultIgnores = []string{
 	".git/", ".hg/", ".svn/", "node_modules/", "bower_components/",
 	".DS_Store", "Thumbs.db", "*.log", ".idea/", "*.swp", "*.swo",
-	"dist/", "coverage/", ".nyc_output/", ".cache/", ".ctxpack/",
+	"dist/", "coverage/", ".nyc_output/", ".cache/", ".packmyrepo/",
 	"*.min.js", "*.min.css", "*.map",
 	"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb", "bun.lock",
 	"go.sum", "Cargo.lock", "poetry.lock", "Pipfile.lock", "uv.lock",
 	"composer.lock", "Gemfile.lock", "pubspec.lock", "packages.lock.json",
-	"ctxpack-output.*", "ctxpack-output-*", "repomix-output.*", "/ctxpack.json",
+	"packmyrepo-output.*", "packmyrepo-output-*", "repomix-output.*", "/packmyrepo.json",
 }
 
 // noiseFiles rarely help an AI understand code. They are skipped by default;
