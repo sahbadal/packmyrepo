@@ -458,7 +458,7 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 		}
 	}
 	fmt.Fprintln(e)
-	fmt.Fprintf(e, "%s %s\n", bold("packmyrepo"), dim("v"+version))
+	fmt.Fprintf(e, "%s %s\n", bold("packmyrepo"), dim(displayVersion()))
 	fmt.Fprintf(e, "  %-12s %s\n", "project", p.Root)
 	if len(o.Scopes) > 0 {
 		fmt.Fprintf(e, "  %-12s %s\n", "only", strings.Join(o.Scopes, ", "))
@@ -542,6 +542,14 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 		fmt.Fprintf(e, "  %s copied to clipboard\n", green("✓"))
 	}
 	fmt.Fprintln(e)
+}
+
+// displayVersion prints "v0.1.0" for releases and plain "dev" for local builds.
+func displayVersion() string {
+	if version == "dev" {
+		return version
+	}
+	return "v" + version
 }
 
 func fitText(total int) string {

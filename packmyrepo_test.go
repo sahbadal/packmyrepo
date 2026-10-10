@@ -81,9 +81,11 @@ func TestRemoveComments(t *testing.T) {
 }
 
 func TestSecrets(t *testing.T) {
-	src := `key = "sk-ant-api03-abcdefghijklmnopqrstuvwx"
-db = "postgres://user:hunter22@localhost/db"
-password: "changeme"`
+	// Fake secrets are glued together at run time, so this file itself does not
+	// look like it leaks a key (to packmyrepo, GitHub or any other scanner).
+	fakeKey := "sk-" + "ant-api03-" + "abcdefghijklmnopqrstuvwx"
+	fakeURL := "postgres://user:" + "hunter22" + "@localhost/db"
+	src := "key = \"" + fakeKey + "\"\ndb = \"" + fakeURL + "\"\npassword: \"changeme\""
 	out, found := redactSecrets("config.py", src)
 	if strings.Contains(out, "abcdefghij") || strings.Contains(out, "hunter22") {
 		t.Fatalf("secret left in output:\n%s", out)
