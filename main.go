@@ -98,6 +98,7 @@ PACK FLAGS
       --line-numbers       prefix lines with numbers
       --max-size SIZE      skip files bigger than this (default 1MB)
       --no-gitignore       do not read .gitignore files
+	  --keep-noise         keep config files like .gitignore, LICENSE, .prettierrc
       --no-default-ignore  do not use built-in ignore rules and presets
       --no-security        do not redact secrets
       --tokenizer NAME     o200k_base (default) | cl100k_base
@@ -262,6 +263,7 @@ func runPack(args []string) error {
 	fs.BoolVar(&o.Quiet, "q", false, "")
 	fs.BoolVar(&o.Quiet, "quiet", false, "")
 	fs.BoolVar(&o.NoTree, "no-tree", false, "")
+	fs.BoolVar(&o.KeepNoise, "keep-noise", false, "")
 	if err := parseFlags(fs, args); err != nil {
 		return err
 	}
@@ -430,6 +432,9 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 	fmt.Fprintln(e)
 	if len(p.Skipped) > 0 {
 		fmt.Fprintf(e, "  %-12s %d binary/large files\n", "skipped", len(p.Skipped))
+	}
+	if p.Noise > 0 {
+		fmt.Fprintf(e, "  %-12s %d config files %s\n", "skipped", p.Noise, dim("(.gitignore, LICENSE... add --keep-noise to include)"))
 	}
 	fmt.Fprintf(e, "  %-12s %s %s\n", "tokens", bold(humanTokens(total)), dim("("+encoderName+")"))
 	fmt.Fprintf(e, "  %-12s %s\n", "fits in", fitText(total))

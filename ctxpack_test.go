@@ -120,3 +120,18 @@ func TestParseSize(t *testing.T) {
 		}
 	}
 }
+
+func TestNoiseFiles(t *testing.T) {
+	m := &Matcher{}
+	m.AddLines(noiseFiles, "")
+	for _, p := range []string{".gitignore", "sub/.gitignore", "LICENSE", "CHANGELOG.md", ".vscode/settings.json", ".prettierrc.json"} {
+		if !m.MatchPath(p) {
+			t.Errorf("%s should be noise", p)
+		}
+	}
+	for _, p := range []string{"src/license.go", "README.md", ".github/workflows/ci.yml", "package.json"} {
+		if m.MatchPath(p) {
+			t.Errorf("%s should not be noise", p)
+		}
+	}
+}

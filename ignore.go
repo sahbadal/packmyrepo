@@ -175,3 +175,17 @@ var defaultIgnores = []string{
 	"composer.lock", "Gemfile.lock", "pubspec.lock", "packages.lock.json",
 	"ctxpack-output.*", "ctxpack-output-*", "repomix-output.*",
 }
+
+// noiseFiles rarely help an AI understand code. They are skipped by default;
+// --keep-noise brings them back, and --include can pick single ones.
+var noiseFiles = []string{
+	".gitignore", ".gitattributes", ".gitmodules", ".gitkeep", ".keep",
+	".dockerignore", ".npmignore", ".prettierignore", ".eslintignore", ".stylelintignore",
+	".editorconfig", ".prettierrc", ".prettierrc.*", "prettier.config.*",
+	".nvmrc", ".node-version", ".python-version", ".ruby-version", ".tool-versions",
+	".npmrc", ".yarnrc", ".yarnrc.yml",
+	"LICENSE", "LICENSE.*", "LICENCE", "LICENCE.*", "COPYING", "NOTICE", "THIRD_PARTY_NOTICES*",
+	"CHANGELOG*", "CODE_OF_CONDUCT*", "CONTRIBUTING*", "SECURITY.md",
+	".vscode/", ".github/ISSUE_TEMPLATE/", ".github/PULL_REQUEST_TEMPLATE*", ".github/FUNDING.yml",
+	".husky/_/",
+}

@@ -69,6 +69,7 @@ type Options struct {
 	Tokenizer      string
 	Quiet          bool
 	NoTree         bool
+	KeepNoise      bool
 }
 
 func defaultOptions() Options {
@@ -88,6 +89,7 @@ type Project struct {
 	Files    []*File
 	Skipped  []Skipped
 	GoModule string
+	Noise    int // config/noise files skipped by default
 }
 
 // Scan walks root, applies ignore rules, reads text files, redacts secrets and counts tokens.
@@ -125,6 +127,12 @@ func Scan(o Options) (*Project, error) {
 			}
 		}
 	}
+
+	noise := &Matcher{}
+	if !o.NoDefaults && !o.KeepNoise {
+		noise.AddLines(noiseFiles, "")
+	}
+
 	var incl *Matcher
 	if len(o.Include) > 0 {
 		incl = &Matcher{}
@@ -162,7 +170,10 @@ func Scan(o Options) (*Project, error) {
 		if m.Match(rel, false) {
 			return nil
 		}
-		// re-add root rules after nested ones? Not needed: nested rules are scoped by base.
+		if noise.MatchPath(rel) && (incl == nil || !incl.Match(rel, false)) {
+			p.Noise++
+			return nil
+		}
 		if incl != nil && !incl.MatchPath(rel) {
 			return nil
 		}
