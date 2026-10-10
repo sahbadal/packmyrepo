@@ -29,12 +29,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  npm:
+    npm:
     needs: github
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # lets npm sign the packages with provenance
+      id-token: write # GitHub proves to npm that this workflow is the publisher
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or newer
+      - run: npm install -g npm@latest
+      - run: npm --version
       - run: node npm/build.mjs "${GITHUB_REF_NAME}" --publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
