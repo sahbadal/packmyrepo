@@ -5,7 +5,7 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
     flags: [-trimpath]
-    ldflags: ["-s -w -X main.version={{.Version}}"]
+    ldflags: ["-s -w -X github.com/sahbadal/packmyrepo/internal/app.version={{.Version}}"]
 archives:
   # No version in the file name, so ".../releases/latest/download/<name>" always works.
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"

@@ -66,7 +66,7 @@ for (const t of TARGETS) {
       "build",
       "-trimpath",
       "-ldflags",
-      `-s -w -X main.version=${version}`,
+      `-s -w -X github.com/sahbadal/packmyrepo/internal/app.version=${version}`,
       "-o",
       path.join(dir, "bin", exe),
       ".",

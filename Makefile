@@ -1,5 +1,5 @@
 VERSION ?= dev
-LDFLAGS = -s -w -X main.version=$(VERSION)
+LDFLAGS = -s -w -X github.com/sahbadal/packmyrepo/internal/app.version=$(VERSION)
 
 build:
 	go build -trimpath -ldflags "$(LDFLAGS)" -o packmyrepo .
