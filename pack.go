@@ -70,6 +70,7 @@ type Options struct {
 	Quiet          bool
 	NoTree         bool
 	KeepNoise      bool
+	Scopes         []string
 }
 
 func defaultOptions() Options {
@@ -155,7 +156,10 @@ func Scan(o Options) (*Project, error) {
 				}
 				return nil
 			}
-			if m.Match(rel, true) {
+			if !inScope(rel, true, o.Scopes) {
+				return filepath.SkipDir
+			}
+			if m.Match(rel, true) && !isScopePath(rel, o.Scopes) {
 				return filepath.SkipDir
 			}
 			if !o.NoGitignore {
@@ -167,7 +171,10 @@ func Scan(o Options) (*Project, error) {
 		if !d.Type().IsRegular() {
 			return nil
 		}
-		if m.Match(rel, false) {
+		if !inScope(rel, false, o.Scopes) {
+			return nil
+		}
+		if m.Match(rel, false) && !isScopePath(rel, o.Scopes) {
 			return nil
 		}
 		if noise.MatchPath(rel) && (incl == nil || !incl.Match(rel, false)) {

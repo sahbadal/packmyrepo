@@ -135,3 +135,27 @@ func TestNoiseFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestScopes(t *testing.T) {
+	sc := []string{"src/api"}
+	cases := []struct {
+		rel  string
+		dir  bool
+		want bool
+	}{
+		{"src", true, true},
+		{"src/api", true, true},
+		{"src/api/user.go", false, true},
+		{"src/web", true, false},
+		{"src/apix/a.go", false, false},
+		{"README.md", false, false},
+	}
+	for _, c := range cases {
+		if got := inScope(c.rel, c.dir, sc); got != c.want {
+			t.Errorf("inScope(%q) = %v, want %v", c.rel, got, c.want)
+		}
+	}
+	if !inScope("anything", false, nil) {
+		t.Error("no scopes must mean everything")
+	}
+}

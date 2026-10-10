@@ -40,9 +40,11 @@ func runServe(args []string) error {
 		return err
 	}
 	o.Ignore = ignore
-	if fs.NArg() > 0 {
-		o.Root = fs.Arg(0)
+	root, scopes, err := resolveTargets(fs.Args())
+	if err != nil {
+		return err
 	}
+	o.Root, o.Scopes = root, scopes
 	setTokenizer(o.Tokenizer)
 	abs, err := filepath.Abs(o.Root)
 	if err != nil {

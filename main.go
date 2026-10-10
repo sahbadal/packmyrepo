@@ -301,7 +301,16 @@ func runPack(args []string) error {
 			o.Output = projectName + "-ctxpack" + extFor(o.Format)
 		}
 	} else {
-		o.Root = target
+		root, scopes, err := resolveTargets(fs.Args())
+		if err != nil {
+			return err
+		}
+		o.Root, o.Scopes = root, scopes
+		if len(o.Entries) > 0 {
+			// --entry picks files by imports, which may live outside the folder
+			o.Entries = entriesRelTo(root, o.Entries)
+			o.Scopes = nil
+		}
 	}
 	if o.Output == "" {
 		o.Output = "ctxpack-output" + extFor(o.Format) // written to the current folder
@@ -315,6 +324,9 @@ func runPack(args []string) error {
 		p.Name = projectName
 	}
 	files, notes, err := Select(p, o)
+	if len(o.Scopes) > 0 {
+		notes = append(notes, "Only part of the project is included: "+strings.Join(o.Scopes, ", "))
+	}
 	if err != nil {
 		return err
 	}
@@ -422,6 +434,10 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 	}
 	fmt.Fprintln(e)
 	fmt.Fprintf(e, "%s %s\n", bold("ctxpack"), dim("v"+version))
+	fmt.Fprintf(e, "  %-12s %s\n", "project", p.Root)
+	if len(o.Scopes) > 0 {
+		fmt.Fprintf(e, "  %-12s %s\n", "only", strings.Join(o.Scopes, ", "))
+	}
 	if len(p.Presets) > 0 {
 		fmt.Fprintf(e, "  %-12s %s\n", "detected", strings.Join(p.Presets, ", "))
 	}
