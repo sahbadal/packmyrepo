@@ -1,4 +1,6 @@
-packmyrepo
+/packmyrepo
+/packmyrepo.exe
 dist/
+npm/dist/
 packmyrepo-output.*
 .packmyrepo/

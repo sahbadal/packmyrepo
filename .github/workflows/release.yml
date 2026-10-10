@@ -1,11 +1,17 @@
 name: release
+
+# Push a tag like v0.1.0 to publish:
+#   1. GitHub Release with binaries for Windows, macOS and Linux (+ checksums)
+#   2. npm packages, so "npx packmyrepo" works
 on:
   push:
     tags: ["v*"]
+
 permissions:
   contents: write
+
 jobs:
-  release:
+  github:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,9 +21,27 @@ jobs:
         with:
           go-version: stable
           check-latest: true
+      - run: go test ./...
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  npm:
+    needs: github
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: node npm/build.mjs "${GITHUB_REF_NAME}" --publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

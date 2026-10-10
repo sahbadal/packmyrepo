@@ -1,13 +1,20 @@
 version: 2
+project_name: packmyrepo
 builds:
   - env: [CGO_ENABLED=0]
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
-    ldflags: ["-s -w"]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{.Version}}"]
 archives:
-  - formats: [tar.gz]
+  # No version in the file name, so ".../releases/latest/download/<name>" always works.
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
         formats: [zip]
+    files: [README.md, LICENSE, THIRD_PARTY_NOTICES.md]
 checksum:
   name_template: checksums.txt
+changelog:
+  sort: asc

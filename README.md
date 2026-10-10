@@ -5,14 +5,32 @@ One small binary, no Node or Python needed.
 
 ## Install
 
-Download the binary for your system from `dist/` (or GitHub Releases), put it somewhere on your PATH, done.
-
-Or build it yourself (Go 1.21+):
+**With Node.js (easiest, nothing else to install):**
 
 ```bash
-go build -o packmyrepo .
-# or: go install github.com/sahbadal/packmyrepo@latest
+npx packmyrepo            # run once without installing
+npm install -g packmyrepo # or keep it installed
 ```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/sahbadal/packmyrepo/main/install.ps1 | iex
+```
+
+**macOS / Linux:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sahbadal/packmyrepo/main/install.sh | sh
+```
+
+**With Go:**
+
+```bash
+go install github.com/sahbadal/packmyrepo@latest
+```
+
+Or download a zip from the [Releases page](https://github.com/sahbadal/packmyrepo/releases).
 
 ## Quick start
 
@@ -31,17 +49,17 @@ packmyrepo undo                   # changed your mind? restore everything
 
 ## Everyday recipes
 
-| Goal                                 | Command                                                      |
-| ------------------------------------ | ------------------------------------------------------------ |
-| Make it smaller (signatures only)    | `packmyrepo -c`                                                 |
-| Fit into a token limit automatically | `packmyrepo --budget 100k`                                      |
-| Only a feature and what it imports   | `packmyrepo --entry src/app.ts`                                 |
-| Only what I changed                  | `packmyrepo --diff`                                             |
-| Review my branch                     | `packmyrepo --since main --with-diff -p review`                 |
+| Goal                                 | Command                                                            |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| Make it smaller (signatures only)    | `packmyrepo -c`                                                    |
+| Fit into a token limit automatically | `packmyrepo --budget 100k`                                         |
+| Only a feature and what it imports   | `packmyrepo --entry src/app.ts`                                    |
+| Only what I changed                  | `packmyrepo --diff`                                                |
+| Review my branch                     | `packmyrepo --since main --with-diff -p review`                    |
 | Ask for a fix the tool can apply     | `packmyrepo -p bugs` or `packmyrepo --ask "add dark mode" --edits` |
-| Pack a GitHub repo                   | `packmyrepo facebook/react -c`                                  |
-| Huge repo, many prompts              | `packmyrepo --split 100k`                                       |
-| Markdown output                      | `packmyrepo -f md`                                              |
+| Pack a GitHub repo                   | `packmyrepo facebook/react -c`                                     |
+| Huge repo, many prompts              | `packmyrepo --split 100k`                                          |
+| Markdown output                      | `packmyrepo -f md`                                                 |
 
 Run `packmyrepo help` for every flag and `packmyrepo prompts` for the prompt templates.
 

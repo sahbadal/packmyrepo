@@ -1,0 +1,38 @@
+{
+    "name": "packmyrepo",
+    "version": "0.0.0",
+    "description": "Pack your codebase into one AI-ready file, and apply the AI's answer back to your files.",
+    "keywords": [
+        "ai",
+        "llm",
+        "chatgpt",
+        "claude",
+        "gemini",
+        "context",
+        "codebase",
+        "prompt",
+        "cli"
+    ],
+    "homepage": "https://github.com/sahbadal/packmyrepo#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/sahbadal/packmyrepo.git"
+    },
+    "bugs": {
+        "url": "https://github.com/sahbadal/packmyrepo/issues"
+    },
+    "license": "MIT",
+    "bin": {
+        "packmyrepo": "bin/packmyrepo.js"
+    },
+    "files": [
+        "bin",
+        "README.md",
+        "LICENSE",
+        "THIRD_PARTY_NOTICES.md"
+    ],
+    "engines": {
+        "node": ">=16"
+    },
+    "optionalDependencies": {}
+}
