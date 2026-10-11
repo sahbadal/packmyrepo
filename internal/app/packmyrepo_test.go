@@ -282,3 +282,35 @@ func TestRemoteURLvsLocalPath(t *testing.T) {
 		t.Error("paths starting with . are always local")
 	}
 }
+
+func TestPriorityOf(t *testing.T) {
+	nextReadme := "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://x)."
+	order := []struct {
+		path, content string
+	}{
+		{"README.md", "# My real project\nWhat it does."},
+		{"package.json", ""},
+		{"src/app/(site)/page.tsx", ""},
+		{"src/app/api/contact/route.ts", ""},
+		{"src/lib/utils.ts", ""},
+		{"tsconfig.json", ""},
+		{"src/components/Hero.module.css", ""},
+		{"src/lib/utils.test.ts", ""},
+		{"eslint.config.mjs", ""},
+		{"src/__mocks__/api.ts", ""},
+	}
+	prev := 1000
+	for _, c := range order {
+		got := priorityOf(c.path, c.content)
+		if got > prev {
+			t.Errorf("%s scored %d, should not beat the file above it (%d)", c.path, got, prev)
+		}
+		prev = got
+	}
+	if priorityOf("README.md", nextReadme) >= priorityOf("src/lib/utils.ts", "") {
+		t.Error("an untouched create-next-app README must rank below real code")
+	}
+	if priorityOf("src/app/(site)/page.tsx", "") <= priorityOf("src/components/sections/Hero.tsx", "") {
+		t.Error("Next.js pages must rank above ordinary components")
+	}
+}

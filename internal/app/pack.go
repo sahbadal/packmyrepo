@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -74,7 +73,7 @@ type Options struct {
 	NoTree         bool
 	KeepNoise      bool
 	NoCache        bool
-	ConfigFile     string
+	ConfigFile     string   // packmyrepo.json that was used, if any
 	Scopes         []string // only these folders/files inside Root (empty = all)
 }
 
@@ -272,7 +271,7 @@ func loadFile(root, rel string, o Options) (*File, *Skipped) {
 	}
 	f.Raw = content
 	f.Content = content
-	f.Priority = priorityOf(rel)
+	f.Priority = priorityOf(rel, content)
 	return f, nil
 }
 
@@ -290,40 +289,6 @@ func readGoModule(root string) string {
 		}
 	}
 	return ""
-}
-
-// priorityOf scores how important a file usually is for understanding a project.
-func priorityOf(rel string) int {
-	low := strings.ToLower(rel)
-	base := path.Base(low)
-	depth := strings.Count(rel, "/")
-	score := 50 - depth*2
-	switch {
-	case strings.HasPrefix(base, "readme"):
-		score = 95
-	case base == "package.json" || base == "go.mod" || base == "cargo.toml" || base == "pyproject.toml" ||
-		base == "pubspec.yaml" || base == "requirements.txt" || base == "pom.xml" || base == "build.gradle" ||
-		base == "composer.json" || base == "gemfile" || base == "dockerfile" || base == "docker-compose.yml":
-		score = 85
-	case strings.HasPrefix(base, "main.") || strings.HasPrefix(base, "index.") || strings.HasPrefix(base, "app.") ||
-		strings.HasPrefix(base, "server.") || base == "lib.rs" || base == "__main__.py" || base == "manage.py":
-		score = 70 - depth
-	}
-	isTest := strings.Contains(low, "/test/") || strings.Contains(low, "/tests/") || strings.HasPrefix(low, "test/") ||
-		strings.HasPrefix(low, "tests/") || strings.Contains(low, "__tests__") || strings.Contains(base, "_test.") ||
-		strings.Contains(base, ".test.") || strings.Contains(base, ".spec.") || strings.HasPrefix(base, "test_")
-	if isTest {
-		score = 20
-	}
-	if strings.Contains(low, "fixture") || strings.Contains(low, "__snapshots__") || strings.Contains(low, "mock") ||
-		strings.Contains(low, "/generated/") || strings.HasSuffix(base, ".csv") || strings.HasSuffix(base, ".svg") ||
-		strings.HasSuffix(base, ".snap") || strings.Contains(low, "migrations/") {
-		score = 10
-	}
-	if strings.HasSuffix(base, ".md") && !strings.HasPrefix(base, "readme") {
-		score = 30
-	}
-	return score
 }
 
 // Select picks the files to pack according to --diff/--since/--entry.
@@ -419,8 +384,17 @@ func Transform(files []*File, o Options) {
 	countAll(changed) // unchanged files keep the count from Scan
 }
 
-// FitBudget shrinks the pack until it fits: compress least important files first,
-// then truncate big data files, then omit files. Returns a human summary.
+// FitBudget shrinks the pack until it fits the token budget. It works from the
+// least important files up, in steps, so important code is touched last:
+//
+//  1. compress low-value files (tests, styles, tooling config, docs)
+//  2. leave out low-value files
+//  3. compress the remaining code, least important first
+//  4. shorten big data/doc files
+//  5. leave out files, least important first
+//  6. refill: put back left-out files that fit in the space that was freed
+//
+// Entry files (--entry) are never compressed or left out.
 func FitBudget(files []*File, budget, overhead int) []string {
 	total := overhead
 	for _, f := range files {
@@ -438,57 +412,63 @@ func FitBudget(files []*File, budget, overhead int) []string {
 		}
 		return order[i].Tokens > order[j].Tokens
 	})
-	var compressed, truncated, omitted int
-	// pass 1: compress code
-	for _, f := range order {
-		if total <= budget {
-			break
-		}
-		if f.Mode != ModeFull || f.Depth == 0 {
-			continue
-		}
-		if s, ok := compressCode(f.Content, f.Lang); ok && s != f.Content {
-			t := countTokens(s)
-			total += t - f.Tokens
-			f.Content, f.Tokens, f.Mode = s, t, ModeCompressed
-			compressed++
-		}
-	}
-	// pass 2: truncate big data/doc files
-	for _, f := range order {
-		if total <= budget {
-			break
-		}
-		if f.Mode != ModeFull || !dataLangs[f.Lang] || f.Tokens < 800 {
-			continue
-		}
-		if s, ok := truncateData(f.Content, 40); ok {
-			t := countTokens(s)
-			total += t - f.Tokens
-			f.Content, f.Tokens, f.Mode = s, t, ModeTruncated
-			truncated++
-		}
-	}
-	// pass 3: omit
+
 	type saved struct {
 		content string
 		tokens  int
 		mode    Mode
 	}
 	backup := map[*File]saved{}
-	for _, f := range order {
+	const lowValue = 30 // priority below or equal: tests, styles, tooling, docs, template READMEs
+
+	compress := func(maxPriority int) {
+		for _, f := range order {
+			if total <= budget {
+				return
+			}
+			if f.Mode != ModeFull || f.Depth == 0 || f.Priority > maxPriority {
+				continue
+			}
+			if s, ok := compressCode(f.Content, f.Lang); ok && s != f.Content {
+				t := countTokens(s)
+				total += t - f.Tokens
+				f.Content, f.Tokens, f.Mode = s, t, ModeCompressed
+			}
+		}
+	}
+	omit := func(maxPriority int) {
+		for _, f := range order {
+			if total <= budget {
+				return
+			}
+			if f.Mode == ModeOmitted || f.Depth == 0 || f.Priority > maxPriority {
+				continue
+			}
+			backup[f] = saved{f.Content, f.Tokens, f.Mode}
+			total -= f.Tokens + wrapperCost(f)
+			f.Content, f.Tokens, f.Mode = "", 0, ModeOmitted
+		}
+	}
+
+	compress(lowValue)
+	omit(lowValue)
+	compress(1 << 30)
+	for _, f := range order { // shorten big data/doc files
 		if total <= budget {
 			break
 		}
-		if f.Depth == 0 {
+		if f.Mode != ModeFull || !dataLangs[f.Lang] || f.Tokens < 800 || f.Depth == 0 {
 			continue
 		}
-		backup[f] = saved{f.Content, f.Tokens, f.Mode}
-		total -= f.Tokens + wrapperCost(f)
-		f.Content, f.Tokens, f.Mode = "", 0, ModeOmitted
-		omitted++
+		if s, ok := truncateData(f.Content, 40); ok {
+			t := countTokens(s)
+			total += t - f.Tokens
+			f.Content, f.Tokens, f.Mode = s, t, ModeTruncated
+		}
 	}
-	// pass 4: refill - dropping one big file may have freed room for smaller ones
+	omit(1 << 30)
+
+	// refill, most important first
 	for i := len(order) - 1; i >= 0; i-- {
 		f := order[i]
 		b, ok := backup[f]
@@ -498,10 +478,10 @@ func FitBudget(files []*File, budget, overhead int) []string {
 		if cost := b.tokens + wrapperCost(f); total+cost <= budget {
 			f.Content, f.Tokens, f.Mode = b.content, b.tokens, b.mode
 			total += cost
-			omitted--
 		}
 	}
-	compressed, truncated, omitted = 0, 0, 0
+
+	var compressed, truncated, omitted int
 	for _, f := range files {
 		switch f.Mode {
 		case ModeCompressed:
