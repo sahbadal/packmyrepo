@@ -249,7 +249,12 @@ func planChanges(root string, changes []Change) []Change {
 			c.Added, c.Removed = lineStats(oldS, c.Content)
 			c.Diff = unifiedDiff(oldS, c.Content, 3)
 		}
-		if !c.Delete {
+		if c.Kind == "modify" {
+			if warn := looksLikeWrongText(oldS, c.Content); warn != "" {
+				c.Partial, c.Note = true, warn
+			}
+		}
+		if !c.Delete && !c.Partial {
 			for _, re := range partialRes {
 				if re.MatchString(c.Content) && !(exists && re.MatchString(oldS)) {
 					c.Partial = true
@@ -471,4 +476,40 @@ func changesFromText(text, to string) ([]Change, error) {
 		return nil, errors.New("the copied text is empty")
 	}
 	return []Change{{Path: to, Content: content}}, nil
+}
+
+// looksLikeWrongText catches a paste that is clearly not the new version of
+// the file: much shorter than before and sharing almost no lines with it.
+// This happens when the wrong thing was on the clipboard (a command, a
+// sentence, another file). Real rewrites keep far more of the old lines.
+func looksLikeWrongText(oldS, newS string) string {
+	oldLines := nonBlank(splitLines(oldS))
+	newLines := nonBlank(splitLines(newS))
+	if len(oldLines) < 10 || len(newLines)*2 >= len(oldLines) {
+		return ""
+	}
+	have := map[string]bool{}
+	for _, l := range newLines {
+		have[strings.TrimSpace(l)] = true
+	}
+	kept := 0
+	for _, l := range oldLines {
+		if have[strings.TrimSpace(l)] {
+			kept++
+		}
+	}
+	if kept*5 >= len(oldLines) {
+		return ""
+	}
+	return fmt.Sprintf("would replace almost the whole file (keeps %d of %d lines). Is the right text copied?", kept, len(oldLines))
+}
+
+func nonBlank(lines []string) []string {
+	var out []string
+	for _, l := range lines {
+		if strings.TrimSpace(l) != "" {
+			out = append(out, l)
+		}
+	}
+	return out
 }

@@ -695,7 +695,7 @@ func runApply(args []string) error {
 		}
 	}
 	if partial > 0 {
-		fmt.Printf("\n  %s %d file(s) look incomplete and will be skipped (use --force to write them anyway)\n", yellow("!"), partial)
+		fmt.Printf("\n  %s %d file(s) look incomplete or wrong and will be skipped (use --force to write them anyway)\n", yellow("!"), partial)
 	}
 	if todo == 0 {
 		fmt.Println("\nNothing to apply.")

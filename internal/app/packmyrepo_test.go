@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -389,5 +390,26 @@ func TestChangesFromTextTo(t *testing.T) {
 	}
 	if _, err := changesFromText("just some text", ""); err == nil || !strings.Contains(err.Error(), "--to") {
 		t.Errorf("the error should mention --to, got %v", err)
+	}
+}
+
+func TestLooksLikeWrongText(t *testing.T) {
+	var b strings.Builder
+	for i := 0; i < 40; i++ {
+		fmt.Fprintf(&b, "line %d\n", i)
+	}
+	old := b.String()
+	if looksLikeWrongText(old, "pmrn apply --to src/lib/utils.ts") == "" {
+		t.Error("a one-line command replacing a 40-line file must be flagged")
+	}
+	if looksLikeWrongText(old, old+"one more line\n") != "" {
+		t.Error("adding a line is a normal edit")
+	}
+	half := strings.Join(strings.Split(old, "\n")[:15], "\n")
+	if looksLikeWrongText(old, half) != "" {
+		t.Error("keeping 15 of 40 lines is a real (if big) edit, not a wrong paste")
+	}
+	if looksLikeWrongText("a\nb\n", "x") != "" {
+		t.Error("tiny files are never flagged")
 	}
 }
