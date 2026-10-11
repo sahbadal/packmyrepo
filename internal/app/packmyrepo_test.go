@@ -254,3 +254,31 @@ func TestConfig(t *testing.T) {
 		t.Errorf("missing config must be fine, got %v %v", c, err)
 	}
 }
+
+func TestRemoteURLvsLocalPath(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	wd, _ := os.Getwd()
+	defer os.Chdir(wd)
+	os.Chdir(dir)
+
+	// "src" exists here, so "src/missing" is a mistyped local path, not GitHub.
+	if _, ok := remoteURL("src/missing"); ok {
+		t.Error("src/missing must be treated as a local path")
+	}
+	if _, _, err := resolveTargets([]string{"src/missing"}); err == nil || !strings.Contains(err.Error(), "path not found") {
+		t.Errorf("want a path-not-found error, got %v", err)
+	}
+	// Nothing called "facebook" exists here, so this is a GitHub shorthand.
+	if url, ok := remoteURL("facebook/react"); !ok || url != "https://github.com/facebook/react" {
+		t.Errorf("facebook/react must be a GitHub repo, got %q %v", url, ok)
+	}
+	if url, ok := remoteURL("https://github.com/a/b"); !ok || url != "https://github.com/a/b" {
+		t.Errorf("full links must stay remote, got %q", url)
+	}
+	if _, ok := remoteURL("./src/missing"); ok {
+		t.Error("paths starting with . are always local")
+	}
+}
