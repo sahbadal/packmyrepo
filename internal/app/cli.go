@@ -464,6 +464,14 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 	if len(o.Scopes) > 0 {
 		fmt.Fprintf(e, "  %-12s %s\n", "only", strings.Join(o.Scopes, ", "))
 	}
+	if len(o.Entries) > 0 {
+		fmt.Fprintf(e, "  %-12s %s %s\n", "entry", strings.Join(o.Entries, ", "), dim("+ imports"))
+	}
+	if o.Since != "" {
+		fmt.Fprintf(e, "  %-12s %s\n", "changed", "since "+o.Since)
+	} else if o.Diff {
+		fmt.Fprintf(e, "  %-12s %s\n", "changed", "uncommitted and new files")
+	}
 	if o.ConfigFile != "" {
 		fmt.Fprintf(e, "  %-12s %s\n", "config", filepath.Base(o.ConfigFile))
 	}
@@ -475,8 +483,17 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 		fmt.Fprintf(e, dim(" (%d compressed, %d truncated, %d omitted)"), comp, trunc, omit)
 	}
 	fmt.Fprintln(e)
-	if len(p.Skipped) > 0 {
-		fmt.Fprintf(e, "  %-12s %d binary/large files\n", "skipped", len(p.Skipped))
+	oldOutputs := 0
+	for _, s := range p.Skipped {
+		if s.Reason == skipOldOutput {
+			oldOutputs++
+		}
+	}
+	if n := len(p.Skipped) - oldOutputs; n > 0 {
+		fmt.Fprintf(e, "  %-12s %d binary/large files\n", "skipped", n)
+	}
+	if oldOutputs > 0 {
+		fmt.Fprintf(e, "  %-12s %d earlier packmyrepo output file(s)\n", "skipped", oldOutputs)
 	}
 	if p.Noise > 0 {
 		fmt.Fprintf(e, "  %-12s %d config files %s\n", "skipped", p.Noise, dim("(.gitignore, LICENSE... add --keep-noise to include)"))

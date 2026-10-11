@@ -263,6 +263,9 @@ func loadFile(root, rel string, o Options) (*File, *Skipped) {
 	if looksBinary(rel, data) {
 		return nil, &Skipped{rel, "binary"}
 	}
+	if isPackOutput(data) {
+		return nil, &Skipped{rel, skipOldOutput}
+	}
 	content := strings.ReplaceAll(string(data), "\r\n", "\n")
 	content = strings.TrimPrefix(content, "\ufeff")
 	f := &File{Path: rel, Lang: langOf(rel), Size: info.Size(), Depth: -1}
@@ -273,6 +276,30 @@ func loadFile(root, rel string, o Options) (*File, *Skipped) {
 	f.Content = content
 	f.Priority = priorityOf(rel, content)
 	return f, nil
+}
+
+// skipOldOutput marks files that packmyrepo itself wrote earlier, under any name.
+const skipOldOutput = "earlier packmyrepo output"
+
+// isPackOutput recognises a file written by packmyrepo (any format, any name)
+// by its first lines, so `-o review.xml` from yesterday is not packed again today.
+func isPackOutput(data []byte) bool {
+	head := data
+	if len(head) > 400 {
+		head = head[:400]
+	}
+	h := string(bytes.TrimLeft(head, " \t\r\n\ufeff"))
+	switch {
+	case strings.HasPrefix(h, "<codebase ") && strings.Contains(h, `packed_by="packmyrepo"`):
+		return true
+	case strings.HasPrefix(h, "{") && strings.Contains(h, `"packed_by": "packmyrepo`):
+		return true
+	case strings.HasPrefix(h, "# ") && strings.Contains(h, "(packed by packmyrepo)"):
+		return true
+	case strings.HasPrefix(h, "====") && strings.Contains(h, "(packed by packmyrepo)"):
+		return true
+	}
+	return false
 }
 
 func readGoModule(root string) string {
@@ -316,6 +343,10 @@ func Select(p *Project, o Options) ([]*File, []string, error) {
 		}
 		if len(changed) == 0 {
 			notes = append(notes, "No changed files found compared to "+ref)
+		} else if o.Since != "" {
+			notes = append(notes, "Only files changed since "+ref+" are included (committed, uncommitted and new files). The rest of the project is not shown.")
+		} else {
+			notes = append(notes, "Only files with uncommitted changes and new files are included. The rest of the project is not shown.")
 		}
 	}
 
@@ -331,6 +362,19 @@ func Select(p *Project, o Options) ([]*File, []string, error) {
 			entries = append(entries, e)
 		}
 		depthOf = r.Closure(entries, o.Depth)
+		they := "they"
+		if len(entries) == 1 {
+			they = "it"
+		}
+		how := "everything " + they + " imports"
+		if len(entries) > 1 {
+			how = "everything they import"
+		}
+		if o.Depth > 0 {
+			how = fmt.Sprintf("the files %s %s, up to %d level(s) deep", they, map[bool]string{true: "imports", false: "import"}[len(entries) == 1], o.Depth)
+		}
+		notes = append(notes, fmt.Sprintf("Only %s and %s are included (%d files). The rest of the project is not shown.",
+			strings.Join(entries, ", "), how, len(depthOf)))
 		entryKeep := map[string]bool{}
 		for k := range depthOf {
 			entryKeep[k] = true

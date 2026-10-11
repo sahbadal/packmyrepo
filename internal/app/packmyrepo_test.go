@@ -314,3 +314,28 @@ func TestPriorityOf(t *testing.T) {
 		t.Error("Next.js pages must rank above ordinary components")
 	}
 }
+
+func TestIsPackOutput(t *testing.T) {
+	yes := []string{
+		"<codebase name=\"web\" packed_by=\"packmyrepo\">\nThis is the whole codebase",
+		"{\n  \"project\": \"web\",\n  \"packed_by\": \"packmyrepo 0.1.1\",",
+		"# web (packed by packmyrepo)\n\nThis file contains",
+		"================================================================\nweb (packed by packmyrepo)\n",
+	}
+	for _, s := range yes {
+		if !isPackOutput([]byte(s)) {
+			t.Errorf("should be recognised as an earlier output: %q", s[:30])
+		}
+	}
+	no := []string{
+		"package app\n// packed_by=\"packmyrepo\" appears in tests",
+		"<codebase>\n</codebase>",
+		"# My project\nNot packed by anything",
+		"{\"name\": \"web\"}",
+	}
+	for _, s := range no {
+		if isPackOutput([]byte(s)) {
+			t.Errorf("must not be treated as an output: %q", s)
+		}
+	}
+}

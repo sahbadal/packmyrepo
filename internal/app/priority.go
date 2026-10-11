@@ -41,7 +41,7 @@ func priorityOf(rel, content string) int {
 		return 95
 	case manifests[base]:
 		return 85
-	case isEntryPoint(low, base, stem, ext):
+	case isEntryPoint(low, stem, ext):
 		return 80 - depth
 	case isToolingConfig(base):
 		return 15
@@ -80,7 +80,7 @@ var codeExts = map[string]bool{
 	".go": true, ".py": true, ".rs": true, ".java": true, ".kt": true, ".dart": true, ".rb": true, ".php": true, ".cs": true,
 }
 
-func isEntryPoint(low, base, stem string, ext string) bool {
+func isEntryPoint(low, stem string, ext string) bool {
 	if !codeExts[ext] {
 		return false
 	}

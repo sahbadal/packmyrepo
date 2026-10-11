@@ -159,12 +159,13 @@ var pyDefRe = regexp.MustCompile(`^(\s*)(async\s+def|def)\s`)
 func indentOf(l string) int {
 	n := 0
 	for _, c := range l {
-		if c == ' ' {
+		switch c {
+		case ' ':
 			n++
-		} else if c == '\t' {
+		case '\t':
 			n += 4
-		} else {
-			break
+		default:
+			return n
 		}
 	}
 	return n
