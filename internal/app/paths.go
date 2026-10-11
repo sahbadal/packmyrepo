@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,7 +39,11 @@ func resolveTargets(targets []string) (root string, scopes []string, err error) 
 			return "", nil, err
 		}
 		if _, err := os.Stat(a); err != nil {
-			return "", nil, fmt.Errorf("path not found: %s", t)
+			msg := fmt.Sprintf("path not found: %s", t)
+			if shorthandRe.MatchString(t) {
+				msg += " (to pack a GitHub repo, use its full link: https://github.com/<user>/<repo>)"
+			}
+			return "", nil, errors.New(msg)
 		}
 		abs = append(abs, a)
 	}

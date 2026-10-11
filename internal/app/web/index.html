@@ -941,6 +941,48 @@
       margin-top: -4px;
     }
 
+    .change details {
+      grid-column: 1 / -1;
+    }
+
+    .change summary {
+      cursor: pointer;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    pre.diffview {
+      margin: 6px 0 0;
+      max-height: 320px;
+      overflow: auto;
+      background: var(--sunken);
+      border-radius: 8px;
+      padding: 8px 0;
+      font: 12px/1.5 var(--mono);
+    }
+
+    pre.diffview span {
+      display: block;
+      padding: 0 12px;
+      white-space: pre;
+    }
+
+    pre.diffview .a {
+      background: color-mix(in srgb, var(--ok) 14%, transparent);
+    }
+
+    pre.diffview .d {
+      background: color-mix(in srgb, var(--stamp) 12%, transparent);
+    }
+
+    pre.diffview .h {
+      color: var(--focus);
+    }
+
+    pre.diffview .c {
+      color: var(--muted);
+    }
+
     /* ---------- toast ---------- */
     .toast {
       position: fixed;
@@ -1076,6 +1118,9 @@
       <p>Paste the AI's full reply. Files written as <code>&lt;file path="…"&gt;</code> blocks, or as code blocks with a
         file name, are found automatically. Every file is backed up before it changes.</p>
       <textarea id="answer" placeholder="Paste the AI response here" aria-label="AI response"></textarea>
+      <label class="field">Copied only the code of one file? Type its path here
+        <input id="to" placeholder="src/lib/utils.ts" autocomplete="off" spellcheck="false">
+      </label>
       <div class="apply-bar">
         <button class="btn" id="paste">Paste from clipboard</button>
         <button class="btn primary" id="previewApply">Preview changes</button>
@@ -1382,20 +1427,27 @@
       setApplyMsg("");
       if (!$("answer").value.trim()) { setApplyMsg("Paste the AI's answer first.", true); return; }
       try {
-        const d = await api("/api/apply/preview", { text: $("answer").value });
+        const d = await api("/api/apply/preview", { text: $("answer").value, to: $("to").value });
         lastPlan = d.changes || [];
-        renderPlan();
+        renderPlan(d.message);
       } catch (e) { setApplyMsg(e.message, true); }
     }
-    function renderPlan() {
+    function diffHTML(lines) {
+      return lines.map((l) => {
+        const cls = l.startsWith("@@") ? "h" : l[0] === "+" ? "a" : l[0] === "-" ? "d" : "c";
+        return `<span class="${cls}">${esc(l)}</span>`;
+      }).join("");
+    }
+    function renderPlan(message) {
       const body = $("planBody");
       if (!lastPlan.length) {
-        body.innerHTML = `<div class="plan-empty">No files found in this answer. Turn on “Ask for an answer I can apply” when packing, so the AI replies in a format packmyrepo understands.</div>`;
+        body.innerHTML = `<div class="plan-empty">${esc(message || "No files found in this answer.")}<br><br>Copy the AI's whole reply, or the code box that starts with &lt;file path=…&gt;. If you copied only the code of one file, type that file's path in the box on the left.</div>`;
         $("runApply").disabled = true; $("forceWrap").hidden = true; return;
       }
       body.innerHTML = lastPlan.map((c) => `<div class="change"><span class="kind ${c.kind}">${c.kind === "unchanged" ? "same" : c.kind === "invalid" ? "skip" : c.kind}</span>
     <span class="path">${esc(c.path)}</span><span class="diff">${c.added ? `<span class="add">+${c.added}</span> ` : ""}${c.removed ? `<span class="rem">−${c.removed}</span>` : ""}</span>
-    ${c.note ? `<span class="note">${esc(c.note)}</span>` : ""}</div>`).join("");
+    ${c.note ? `<span class="note">${esc(c.note)}</span>` : ""}
+    ${c.diff && c.diff.length ? `<details${lastPlan.length <= 3 ? " open" : ""}><summary>Show changes</summary><pre class="diffview">${diffHTML(c.diff)}</pre></details>` : ""}</div>`).join("");
       const partial = lastPlan.some((c) => c.partial);
       $("forceWrap").hidden = !partial;
       const doable = lastPlan.filter((c) => ["new", "modify", "delete"].includes(c.kind) && (!c.partial || $("force").checked));
@@ -1410,7 +1462,7 @@
     };
     $("runApply").onclick = async () => {
       try {
-        const d = await api("/api/apply/run", { text: $("answer").value, force: $("force").checked });
+        const d = await api("/api/apply/run", { text: $("answer").value, to: $("to").value, force: $("force").checked });
         setApplyMsg(`Applied ${d.applied} change${d.applied === 1 ? "" : "s"}. Backup saved in ${d.backup}.`);
         toast("Changes applied");
         $("runApply").disabled = true;

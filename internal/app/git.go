@@ -85,8 +85,11 @@ func remoteURL(target string) (string, bool) {
 	if strings.HasPrefix(target, "https://") || strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "git@") {
 		return target, true
 	}
-	if shorthandRe.MatchString(target) {
-		if _, err := os.Stat(target); err != nil {
+	if shorthandRe.MatchString(target) && !strings.HasPrefix(target, ".") {
+		first := strings.SplitN(target, "/", 2)[0]
+		_, errFull := os.Stat(target)
+		_, errFirst := os.Stat(first)
+		if errFull != nil && errFirst != nil {
 			return "https://github.com/" + strings.TrimSuffix(target, ".git"), true
 		}
 	}
@@ -116,7 +119,7 @@ func cloneRemote(url, branch string) (string, error) {
 	cmd.Stderr = &errb
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(dir)
-		return "", fmt.Errorf("could not clone %s: %s", url, strings.TrimSpace(errb.String()))
+		return "", fmt.Errorf("could not clone %s: %s\n  (check the link; if you meant a folder on your computer, check its spelling)", url, strings.TrimSpace(errb.String()))
 	}
 	return dir, nil
 }

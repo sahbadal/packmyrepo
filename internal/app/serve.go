@@ -275,25 +275,36 @@ func (s *server) pack(w http.ResponseWriter, r *http.Request) {
 func (s *server) applyPreview(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Text string `json:"text"`
+		To   string `json:"to"`
 	}
 	if err := readJSON(r, &req); err != nil {
 		writeErr(w, err)
 		return
 	}
-	plan := planChanges(s.opts.Root, parseChanges(req.Text))
-	writeJSON(w, map[string]any{"changes": plan})
+	changes, err := changesFromText(req.Text, strings.TrimSpace(req.To))
+	if err != nil {
+		writeJSON(w, map[string]any{"changes": []Change{}, "message": err.Error()})
+		return
+	}
+	writeJSON(w, map[string]any{"changes": planChanges(s.opts.Root, changes)})
 }
 
 func (s *server) applyRun(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Text  string `json:"text"`
+		To    string `json:"to"`
 		Force bool   `json:"force"`
 	}
 	if err := readJSON(r, &req); err != nil {
 		writeErr(w, err)
 		return
 	}
-	plan := planChanges(s.opts.Root, parseChanges(req.Text))
+	changes, err := changesFromText(req.Text, strings.TrimSpace(req.To))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	plan := planChanges(s.opts.Root, changes)
 	backup, n, err := applyChanges(s.opts.Root, plan, req.Force)
 	if err != nil {
 		writeErr(w, err)
