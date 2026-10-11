@@ -15,14 +15,15 @@ import (
 
 // Change is one file operation found in an AI response.
 type Change struct {
-	Path    string `json:"path"`
-	Content string `json:"-"`
-	Delete  bool   `json:"delete"`
-	Kind    string `json:"kind"` // new, modify, delete, unchanged, invalid
-	Partial bool   `json:"partial"`
-	Added   int    `json:"added"`
-	Removed int    `json:"removed"`
-	Note    string `json:"note,omitempty"`
+	Path    string   `json:"path"`
+	Content string   `json:"-"`
+	Delete  bool     `json:"delete"`
+	Kind    string   `json:"kind"` // new, modify, delete, unchanged, invalid
+	Partial bool     `json:"partial"`
+	Added   int      `json:"added"`
+	Removed int      `json:"removed"`
+	Note    string   `json:"note,omitempty"`
+	Diff    []string `json:"diff,omitempty"` // unified diff lines, for review before applying
 }
 
 var (
@@ -239,12 +240,14 @@ func planChanges(root string, changes []Change) []Change {
 			c.Removed = strings.Count(oldS, "\n") + 1
 		case !exists:
 			c.Kind = "new"
-			c.Added = strings.Count(c.Content, "\n") + 1
+			c.Added = len(splitLines(c.Content))
+			c.Diff = newFileDiff(c.Content, 40)
 		case strings.TrimRight(oldS, "\n") == strings.TrimRight(c.Content, "\n"):
 			c.Kind = "unchanged"
 		default:
 			c.Kind = "modify"
 			c.Added, c.Removed = lineStats(oldS, c.Content)
+			c.Diff = unifiedDiff(oldS, c.Content, 3)
 		}
 		if !c.Delete {
 			for _, re := range partialRes {
@@ -300,26 +303,21 @@ func applyChanges(root string, plan []Change, force bool) (backupDir string, app
 			}
 			man.Deleted = append(man.Deleted, c.Path)
 		case "new", "modify":
-			content := c.Content
 			mode := os.FileMode(0o644)
+			var old []byte
 			if c.Kind == "modify" {
 				if err := backup(c.Path); err != nil {
 					return backupDir, applied, err
 				}
-				old, _ := os.ReadFile(abs)
+				old, _ = os.ReadFile(abs)
 				if st, err := os.Stat(abs); err == nil {
 					mode = st.Mode().Perm()
-				}
-				if strings.Contains(string(old), "\r\n") {
-					content = strings.ReplaceAll(content, "\n", "\r\n")
 				}
 				man.Modified = append(man.Modified, c.Path)
 			} else {
 				man.Created = append(man.Created, c.Path)
 			}
-			if !strings.HasSuffix(content, "\n") {
-				content += "\n"
-			}
+			content := matchFileStyle(c.Content, old, c.Kind == "modify")
 			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
 				return backupDir, applied, err
 			}
@@ -420,4 +418,57 @@ func undoLast(root string) (string, error) {
 	}
 	_ = os.Rename(dir, dir+".undone")
 	return strings.Join(report, "\n"), nil
+}
+
+// matchFileStyle keeps the file's own conventions so the only differences
+// are the ones the AI actually made: Windows line endings stay Windows line
+// endings, and a file that had no newline at the end does not gain one.
+// New files get the usual single newline at the end.
+func matchFileStyle(content string, old []byte, existed bool) string {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	body := strings.TrimRight(content, "\n")
+	if body == "" {
+		return content
+	}
+	endsWithNewline := true
+	crlf := false
+	if existed {
+		o := string(old)
+		endsWithNewline = strings.HasSuffix(o, "\n")
+		crlf = strings.Contains(o, "\r\n")
+	}
+	if endsWithNewline {
+		body += "\n"
+	}
+	if crlf {
+		body = strings.ReplaceAll(body, "\n", "\r\n")
+	}
+	return body
+}
+
+// changesFromText turns an AI reply into changes. With to set, the reply is
+// treated as the new content of that one file, for when only the code was
+// copied (without the <file path="..."> lines around it).
+func changesFromText(text, to string) ([]Change, error) {
+	if to == "" {
+		changes := parseChanges(text)
+		if len(changes) == 0 {
+			return nil, errors.New("no file blocks found in the answer.\n" +
+				"  Copy the AI's whole reply (or the code box that starts with <file path=...>).\n" +
+				"  If you copied only the code of one file, run: packmyrepo apply --to path/to/that/file")
+		}
+		return changes, nil
+	}
+	content := text
+	if ch := parseChanges(text); len(ch) == 1 && !ch[0].Delete {
+		content = ch[0].Content // the reply had the <file> lines after all
+	} else if len(ch) > 1 {
+		return nil, fmt.Errorf("the answer contains %d files; drop --to to apply all of them", len(ch))
+	} else {
+		content = unwrapFence(strings.Trim(text, "\r\n"))
+	}
+	if strings.TrimSpace(content) == "" {
+		return nil, errors.New("the copied text is empty")
+	}
+	return []Change{{Path: to, Content: content}}, nil
 }

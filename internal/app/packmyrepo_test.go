@@ -339,3 +339,55 @@ func TestIsPackOutput(t *testing.T) {
 		}
 	}
 }
+
+func TestMatchFileStyle(t *testing.T) {
+	cases := []struct {
+		name, content, old string
+		existed            bool
+		want               string
+	}{
+		{"keeps a missing final newline", "a\nb", "a\nc", true, "a\nb"},
+		{"keeps a final newline", "a\nb", "a\nc\n", true, "a\nb\n"},
+		{"keeps Windows line endings", "a\nb\n", "a\r\nc\r\n", true, "a\r\nb\r\n"},
+		{"new files end with one newline", "a\nb\n\n\n", "", false, "a\nb\n"},
+	}
+	for _, c := range cases {
+		if got := matchFileStyle(c.content, []byte(c.old), c.existed); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+func TestUnifiedDiff(t *testing.T) {
+	old := "a\nb\nc\nd\ne\nf\ng\nh\n"
+	new := "a\nb\nc\nX\ne\nf\ng\nh\n"
+	d := unifiedDiff(old, new, 1)
+	want := []string{"@@ -3,3 +3,3 @@", " c", "-d", "+X", " e"}
+	if strings.Join(d, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %q, want %q", d, want)
+	}
+	if unifiedDiff("same\n", "same", 3) != nil {
+		t.Error("equal texts must give no diff")
+	}
+}
+
+func TestChangesFromTextTo(t *testing.T) {
+	// only the code was copied
+	ch, err := changesFromText("export const x = 1;\n", "src/x.ts")
+	if err != nil || len(ch) != 1 || ch[0].Path != "src/x.ts" || ch[0].Content != "export const x = 1;" {
+		t.Fatalf("code only: %+v %v", ch, err)
+	}
+	// a code fence around it is removed
+	ch, _ = changesFromText("```ts\nexport const y = 2;\n```", "src/y.ts")
+	if len(ch) != 1 || ch[0].Content != "export const y = 2;" {
+		t.Fatalf("fenced: %+v", ch)
+	}
+	// the <file> lines were copied after all
+	ch, _ = changesFromText("<file path=\"other.ts\">\nconst z = 3;\n</file>", "src/z.ts")
+	if len(ch) != 1 || ch[0].Path != "src/z.ts" || ch[0].Content != "const z = 3;" {
+		t.Fatalf("with file block: %+v", ch)
+	}
+	if _, err := changesFromText("just some text", ""); err == nil || !strings.Contains(err.Error(), "--to") {
+		t.Errorf("the error should mention --to, got %v", err)
+	}
+}

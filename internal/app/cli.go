@@ -119,6 +119,9 @@ APPLY FLAGS
       --dir PATH           project folder (default .)
   -y, --yes                apply without asking
       --dry-run            only show what would change
+	  --to FILE            the copied text is the new content of FILE
+                           (when you copied only the code, without <file path=...>)
+      --no-diff            do not show the line-by-line changes
       --force              also write files that look incomplete
       --undo               restore the last backup
 
@@ -591,15 +594,18 @@ func fitText(total int) string {
 
 func runApply(args []string) error {
 	fs := newFlagSet("apply")
-	var clip, yes, dry, force, undo bool
+	var clip, yes, dry, force, undo, noDiff bool
+	var to string
 	dir := "."
 	fs.BoolVar(&clip, "clipboard", false, "")
 	fs.StringVar(&dir, "dir", ".", "")
+	fs.StringVar(&to, "to", "", "")
 	fs.BoolVar(&yes, "y", false, "")
 	fs.BoolVar(&yes, "yes", false, "")
 	fs.BoolVar(&dry, "dry-run", false, "")
 	fs.BoolVar(&force, "force", false, "")
 	fs.BoolVar(&undo, "undo", false, "")
+	fs.BoolVar(&noDiff, "no-diff", false, "")
 	if err := parseFlags(fs, args); err != nil {
 		return err
 	}
@@ -641,11 +647,28 @@ func runApply(args []string) error {
 		fmt.Println(dim("reading the AI response from the clipboard"))
 	}
 
-	changes := parseChanges(text)
-	if len(changes) == 0 {
-		return errors.New("no file blocks found. Ask the AI to answer with <file path=\"...\"> blocks (pack with --edits or a prompt like -p bugs)")
+	if to != "" {
+		to = entriesRelTo(root, []string{to})[0] // accept paths relative to where you are
+	}
+	changes, err := changesFromText(text, to)
+	if err != nil {
+		return err
 	}
 	plan := planChanges(root, changes)
+
+	// 1. what changes, in detail, so it can be read before saying yes
+	if !noDiff {
+		for _, c := range plan {
+			if len(c.Diff) == 0 || (c.Partial && !force) {
+				continue
+			}
+			fmt.Printf("\n%s %s\n", bold("───"), bold(c.Path))
+			printDiff(c.Diff, 120)
+		}
+	}
+
+	// 2. one line per file
+	fmt.Println()
 	var todo, partial int
 	for _, c := range plan {
 		label := map[string]string{"new": green("new   "), "modify": yellow("modify"), "delete": red("delete"), "unchanged": dim("same  "), "invalid": red("skip  ")}[c.Kind]
@@ -679,7 +702,7 @@ func runApply(args []string) error {
 		return nil
 	}
 	if dry {
-		fmt.Printf("\n%d change(s) would be applied (dry run).\n", todo)
+		fmt.Printf("\n%d change(s) would be applied (dry run, nothing was written).\n", todo)
 		return nil
 	}
 	if !yes {
@@ -688,7 +711,7 @@ func runApply(args []string) error {
 			return err
 		}
 		if !ok {
-			fmt.Println("Cancelled.")
+			fmt.Println("Cancelled. Nothing was written.")
 			return nil
 		}
 	}
@@ -699,6 +722,26 @@ func runApply(args []string) error {
 	rel, _ := filepath.Rel(root, backup)
 	fmt.Printf("%s applied %d change(s). Backup: %s  (undo with: packmyrepo undo)\n", green("✓"), n, rel)
 	return nil
+}
+
+// printDiff prints unified-diff lines in colour, at most max lines.
+func printDiff(lines []string, max int) {
+	for k, l := range lines {
+		if k == max {
+			fmt.Println(dim(fmt.Sprintf("  … %d more lines (use --dry-run and open the file to see everything)", len(lines)-max)))
+			return
+		}
+		switch {
+		case strings.HasPrefix(l, "@@"):
+			fmt.Println(cyan(l))
+		case strings.HasPrefix(l, "+"):
+			fmt.Println(green(l))
+		case strings.HasPrefix(l, "-"):
+			fmt.Println(red(l))
+		default:
+			fmt.Println(dim(l))
+		}
+	}
 }
 
 // confirm asks on the terminal; when stdin was used for input it opens the tty directly.
