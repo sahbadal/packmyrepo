@@ -43,6 +43,7 @@ Pick whichever is easiest for you. All of them install the same small native pro
 | Go            | `go install github.com/sahbadal/packmyrepo@latest`                                                |
 
 Or download a zip from the [Releases page](https://github.com/sahbadal/packmyrepo/releases). The installers check every download against its SHA-256 checksum before installing.
+Tip: `npx` can keep using an old cached copy. Run `npx packmyrepo@latest` to be sure you get the newest version.
 
 ## Quick start
 
