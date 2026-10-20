@@ -413,3 +413,25 @@ func TestLooksLikeWrongText(t *testing.T) {
 		t.Error("tiny files are never flagged")
 	}
 }
+
+func TestSplitPartsStayUnderLimit(t *testing.T) {
+	var files []*File
+	for i := 0; i < 200; i++ {
+		body := strings.Repeat("x := 1\n", 40)
+		files = append(files, &File{
+			Path: fmt.Sprintf("pkg/file%03d.go", i), Lang: "go",
+			Raw: body, Content: body, Depth: -1,
+		})
+	}
+	countAll(files)
+	const limit = 4000
+	parts, _ := renderAll(RenderInput{Project: "t", Files: files, Format: "xml"}, limit)
+	if len(parts) < 2 {
+		t.Fatalf("expected several parts, got %d", len(parts))
+	}
+	for i, p := range parts {
+		if n := countTokens(p); n > limit {
+			t.Errorf("part %d has %d tokens, limit is %d", i+1, n, limit)
+		}
+	}
+}
