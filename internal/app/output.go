@@ -285,10 +285,20 @@ func xmlAttr(s string) string {
 // renderAll renders the pack, splitting into parts when maxPart > 0.
 // It returns the rendered parts and the total token count.
 func renderAll(base RenderInput, maxPart int) ([]string, int) {
+	parts, sizes := renderParts(base, maxPart)
+	total := 0
+	for _, n := range sizes {
+		total += n
+	}
+	return parts, total
+}
+
+// renderParts is renderAll, but it returns the token count of every part.
+func renderParts(base RenderInput, maxPart int) ([]string, []int) {
 	tree := buildTree(base.Files)
 	if maxPart <= 0 {
 		base.Total = measure(base, tree)
-		return []string{Render(base, tree)}, base.Total
+		return []string{Render(base, tree)}, []int{base.Total}
 	}
 	// group files into chunks by token size
 	var groups [][]*File
@@ -310,7 +320,7 @@ func renderAll(base RenderInput, maxPart int) ([]string, int) {
 	}
 	groups = append(groups, cur)
 	var parts []string
-	total := 0
+	var sizes []int
 	for i, g := range groups {
 		in := base
 		in.Files = g
@@ -322,11 +332,10 @@ func renderAll(base RenderInput, maxPart int) ([]string, int) {
 			in.GitDiff = ""
 		}
 		in.Total = measure(in, tree)
-		out := Render(in, tree)
-		total += in.Total
-		parts = append(parts, out)
+		parts = append(parts, Render(in, tree))
+		sizes = append(sizes, in.Total)
 	}
-	return parts, total
+	return parts, sizes
 }
 
 // measure counts the tokens of a render without tokenising every file again:

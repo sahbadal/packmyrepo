@@ -435,3 +435,29 @@ func TestSplitPartsStayUnderLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestShortPath(t *testing.T) {
+	got := shortPath("$RECYCLE.BIN/S-1-5-21-1565094798-830510425-60595541-1001/$R3IB0YM.xml", 44)
+	if !strings.HasPrefix(got, "$RECYCLE.BIN/…") || !strings.HasSuffix(got, "$R3IB0YM.xml") {
+		t.Errorf("shortPath = %q, want the top folder and the file name", got)
+	}
+	if n := len([]rune(got)); n > 44 {
+		t.Errorf("shortPath is %d chars, want at most 44", n)
+	}
+	if got := shortPath("a/b.go", 44); got != "a/b.go" {
+		t.Errorf("short paths must not change, got %q", got)
+	}
+}
+
+func TestBiggestFolders(t *testing.T) {
+	files := []*File{
+		{Path: "internal/app/a.go", Tokens: 50},
+		{Path: "internal/app/web/index.html", Tokens: 100},
+		{Path: "internal/tools/b.go", Tokens: 10},
+		{Path: "main.go", Tokens: 5},
+	}
+	got := biggestFolders(files, 3)
+	if len(got) != 2 || got[0].Path != "internal/app/" || got[0].Tokens != 150 {
+		t.Fatalf("biggestFolders = %+v, want internal/app/ (150) first", got)
+	}
+}

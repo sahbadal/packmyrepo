@@ -381,7 +381,11 @@ func runPack(args []string) error {
 		notes := FitBudget(files, o.Budget, overhead)
 		in.Notes = append(in.Notes, notes...)
 	}
-	parts, total := renderAll(in, o.Split)
+	parts, sizes := renderParts(in, o.Split)
+	total := 0
+	for _, n := range sizes {
+		total += n
+	}
 	saveTokenCache()
 
 	// ---- write results ----
@@ -412,7 +416,7 @@ func runPack(args []string) error {
 		}
 	}
 	if !o.Quiet {
-		printReport(p, files, total, written, copied, in.Notes, o, time.Since(started))
+		printReport(p, files, total, sizes, written, copied, in.Notes, o, time.Since(started))
 	}
 	return nil
 }
@@ -442,7 +446,7 @@ func partNames(out string, n int) []string {
 	return names
 }
 
-func printReport(p *Project, files []*File, total int, written []string, copied bool, notes []string, o Options, took time.Duration) {
+func printReport(p *Project, files []*File, total int, sizes []int, written []string, copied bool, notes []string, o Options, took time.Duration) {
 	e := os.Stderr
 	var full, comp, trunc, omit int
 	var secretFiles []string
@@ -532,10 +536,7 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 				if bar < 1 {
 					bar = 1
 				}
-				name := f.Path
-				if len(name) > 44 {
-					name = "…" + name[len(name)-43:]
-				}
+				name := shortPath(f.Path, 44)
 				color := green
 				if pct > 25 {
 					color = red
@@ -545,6 +546,9 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 				fmt.Fprintf(e, "  %s %-44s %7s %5.1f%%\n", color(strings.Repeat("█", bar)+strings.Repeat("░", 20-bar)), name, humanTokens(f.Tokens), pct)
 			}
 		}
+	}
+	if total > 1_000_000 {
+		printTooBigHelp(e, p, files, total)
 	}
 	if len(secretFiles) > 0 {
 		fmt.Fprintf(e, "\n  %s secrets were redacted in:\n", yellow("!"))
@@ -556,8 +560,12 @@ func printReport(p *Project, files []*File, total int, written []string, copied 
 		fmt.Fprintf(e, "\n  %s %s\n", cyan("i"), n)
 	}
 	fmt.Fprintln(e)
-	for _, w := range written {
-		fmt.Fprintf(e, "  %s wrote %s\n", green("✓"), w)
+	for i, w := range written {
+		if i < len(sizes) {
+			fmt.Fprintf(e, "  %s wrote %s  %s\n", green("✓"), w, dim(humanTokens(sizes[i])))
+		} else {
+			fmt.Fprintf(e, "  %s wrote %s\n", green("✓"), w)
+		}
 	}
 	if copied {
 		fmt.Fprintf(e, "  %s copied to clipboard\n", green("✓"))
@@ -585,7 +593,7 @@ func fitText(total int) string {
 		}
 	}
 	if len(fits) == 0 {
-		return red("too big for one prompt") + dim(" - try -c, --budget or --split")
+		return red("too big for one prompt") + dim(" - options below")
 	}
 	return strings.Join(fits, " / ") + dim(" context windows")
 }
@@ -763,4 +771,95 @@ func confirm(q string, stdinUsed bool) (bool, error) {
 	line, _ := bufio.NewReader(r).ReadString('\n')
 	a := strings.ToLower(strings.TrimSpace(line))
 	return a == "y" || a == "yes" || a == "haan" || a == "ha", nil
+}
+
+// shortPath fits a path into max characters by cutting the middle, so the top
+// folder (where it lives) and the file name both stay visible.
+func shortPath(p string, max int) string {
+	r := []rune(p)
+	if len(r) <= max {
+		return p
+	}
+	var head []rune
+	if i := strings.IndexByte(p, '/'); i >= 0 && i < max-16 {
+		head = []rune(p[:i+1])
+	}
+	keep := max - len(head) - 1
+	return string(head) + "…" + string(r[len(r)-keep:])
+}
+
+type folderSize struct {
+	Path   string
+	Tokens int
+}
+
+// biggestFolders returns the n heaviest folders. When everything sits in one
+// folder (like src/ or internal/), it looks inside it instead.
+func biggestFolders(files []*File, n int) []folderSize {
+	prefix := ""
+	for depth := 0; depth < 6; depth++ {
+		sums := map[string]int{}
+		for _, f := range files {
+			if f.Mode == ModeOmitted || !strings.HasPrefix(f.Path, prefix) {
+				continue
+			}
+			rest := f.Path[len(prefix):]
+			if i := strings.IndexByte(rest, '/'); i >= 0 {
+				sums[prefix+rest[:i+1]] += f.Tokens
+			}
+		}
+		out := make([]folderSize, 0, len(sums))
+		for k, v := range sums {
+			out = append(out, folderSize{k, v})
+		}
+		sort.Slice(out, func(i, j int) bool { return out[i].Tokens > out[j].Tokens })
+		if len(out) == 1 {
+			prefix = out[0].Path
+			continue
+		}
+		if len(out) > n {
+			out = out[:n]
+		}
+		return out
+	}
+	return nil
+}
+
+// printTooBigHelp shows where the tokens are and ready-to-run commands.
+func printTooBigHelp(e *os.File, p *Project, files []*File, total int) {
+	folders := biggestFolders(files, 3)
+	if len(folders) > 0 {
+		fmt.Fprintf(e, "\n  %s\n", bold("biggest folders"))
+		for _, f := range folders {
+			pct := float64(f.Tokens) * 100 / float64(total)
+			fmt.Fprintf(e, "  %-44s %7s %5.1f%%\n", shortPath(f.Path, 44), humanTokens(f.Tokens), pct)
+		}
+	}
+	base := "packmyrepo" + pathArg(p.Root)
+	fmt.Fprintf(e, "\n  %s\n", bold("too big for one prompt, try one of these"))
+	fmt.Fprintf(e, "    %-36s  %s\n", base+" -c", dim("keep signatures, drop function bodies"))
+	fmt.Fprintf(e, "    %-36s  %s\n", base+" --budget 200k", dim("keep only the most important files"))
+	fmt.Fprintf(e, "    %-36s  %s\n", base+" --split 200k", dim("several smaller files, paste one by one"))
+	if len(folders) > 0 {
+		dir := filepath.Join(p.Root, filepath.FromSlash(strings.TrimSuffix(folders[0].Path, "/")))
+		fmt.Fprintf(e, "    %-36s  %s\n", "packmyrepo"+pathArg(dir), dim("only the biggest folder"))
+	}
+}
+
+// pathArg turns a folder into a command-line argument relative to where the
+// user is, or "" when it is the current folder.
+func pathArg(abs string) string {
+	if wd, err := os.Getwd(); err == nil {
+		if rel, err := filepath.Rel(wd, abs); err == nil && !strings.HasPrefix(rel, "..") {
+			abs = filepath.ToSlash(rel)
+		}
+	}
+	abs = filepath.ToSlash(abs)
+	if abs == "." {
+		return ""
+	}
+	if strings.ContainsAny(abs, " &()'") {
+		return ` "` + abs + `"`
+	}
+	return " " + abs
 }
