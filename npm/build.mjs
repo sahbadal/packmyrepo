@@ -120,35 +120,69 @@ console.log(
   `\nbuilt ${packageDirs.length} packages in ${path.relative(root, out)}`,
 );
 
-// 3. publish (platform packages first)
+// 3. publish: platform packages first, the launcher only once they are live on npm,
+//    so "npx packmyrepo" never finds a launcher without its binary
 if (publish) {
-  for (const dir of packageDirs) {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(dir, "package.json"), "utf8"),
-    );
-    if (alreadyPublished(pkg.name, version)) {
-      console.log(`skip ${pkg.name}@${version} (already on npm)`);
-      continue;
-    }
-    console.log(`publishing ${pkg.name}@${version}`);
-    const flags = ["publish", "--access", "public"];
-    if (process.env.GITHUB_ACTIONS === "true") flags.push("--provenance"); // signed link to the exact commit
-    if (dryRun) flags.push("--dry-run");
-    if (version.includes("-")) flags.push("--tag", "next"); // 0.2.0-beta.1 must not become "latest"
-    execFileSync("npm", flags, {
-      cwd: dir,
-      stdio: "inherit",
-      shell: process.platform === "win32",
-    });
+  const mainDir = packageDirs.pop();
+  for (const dir of packageDirs) publishDir(dir);
+  if (!dryRun) {
+    for (const dir of packageDirs) waitUntilLive(readName(dir), version);
   }
+  publishDir(mainDir);
+}
+
+function publishDir(dir) {
+  const name = readName(dir);
+  if (alreadyPublished(name, version)) {
+    console.log(`skip ${name}@${version} (already on npm)`);
+    return;
+  }
+  console.log(`publishing ${name}@${version}`);
+  const flags = ["publish", "--access", "public"];
+  if (process.env.GITHUB_ACTIONS === "true") flags.push("--provenance"); // signed link to the exact commit
+  if (dryRun) flags.push("--dry-run");
+  if (version.includes("-")) flags.push("--tag", "next"); // 0.2.0-beta.1 must not become "latest"
+  execFileSync("npm", flags, {
+    cwd: dir,
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+}
+
+function readName(dir) {
+  return JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"))
+    .name;
+}
+
+function waitUntilLive(name, v) {
+  const deadline = Date.now() + 30 * 60 * 1000;
+  while (!alreadyPublished(name, v)) {
+    if (Date.now() > deadline) {
+      console.error(
+        `${name}@${v} is still not on npm after 30 minutes. The launcher was NOT published. Re-run this job later.`,
+      );
+      process.exit(1);
+    }
+    console.log(`waiting for ${name}@${v} to appear on npm...`);
+    sleep(30_000);
+  }
+  console.log(`ok ${name}@${v} is live`);
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function alreadyPublished(name, v) {
   try {
-    const res = execFileSync("npm", ["view", `${name}@${v}`, "version"], {
-      stdio: ["ignore", "pipe", "ignore"],
-      shell: process.platform === "win32",
-    });
+    const res = execFileSync(
+      "npm",
+      ["view", `${name}@${v}`, "version", "--prefer-online"],
+      {
+        stdio: ["ignore", "pipe", "ignore"],
+        shell: process.platform === "win32",
+      },
+    );
     return res.toString().trim() === v;
   } catch {
     return false;
