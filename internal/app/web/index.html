@@ -509,6 +509,62 @@
       background-color: var(--stamp);
     }
 
+    .too-big h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .big-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .big-row .p {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--mono);
+      color: var(--ink);
+    }
+
+    .big-row .t {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .big-btn {
+      border: 1px solid var(--line);
+      background: none;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 12.5px;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .big-btn:hover {
+      border-color: var(--tape-dark);
+      color: var(--ink);
+    }
+
+    .big-fix {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
     .tick {
       position: absolute;
       top: -4px;
@@ -1055,6 +1111,7 @@
           <div class="scale" id="scale" aria-hidden="true">
             <div class="fill" id="fill"></div>
           </div>
+          <div class="too-big" id="tooBig" hidden></div>
         </div>
 
         <div class="group">
@@ -1222,10 +1279,57 @@
       const sub = $("loadSub");
       sub.classList.toggle("over", shown > 0 && !fits.length);
       if (!n) sub.textContent = "Select files on the left.";
-      else if (!fits.length) sub.textContent = "Too big for one prompt. Turn on Compress code or set a token budget.";
+      else if (!fits.length) sub.textContent = "Too big for one prompt. Skip a big folder, compress, or set a budget.";
       else sub.textContent = `${exact != null ? "Exact count after packing" : "Before compression"} · fits a ${fits[0][0]} context window and larger`;
       $("countText").textContent = `${n} of ${state.files.length} files selected`;
+      renderTooBig(n > 0 && shown > 200000);
     }
+
+    // ---------- too big: where the tokens are ----------
+    function biggestFolders(n) {
+      let prefix = "";
+      for (let depth = 0; depth < 6; depth++) {
+        const sums = new Map();
+        for (const p of state.selected) {
+          if (!p.startsWith(prefix)) continue;
+          const rest = p.slice(prefix.length), i = rest.indexOf("/");
+          if (i < 0) continue;
+          const k = prefix + rest.slice(0, i + 1);
+          sums.set(k, (sums.get(k) || 0) + (state.byPath.get(p)?.tokens || 0));
+        }
+        const out = [...sums].sort((a, b) => b[1] - a[1]);
+        if (out.length === 1) { prefix = out[0][0]; continue; } // everything in one folder: look inside
+        return out.slice(0, n);
+      }
+      return [];
+    }
+    function renderTooBig(show) {
+      const box = $("tooBig");
+      box.hidden = !show;
+      if (!show) return;
+      const rows = biggestFolders(3).map(([p, t]) =>
+        `<div class="big-row"><span class="p" title="${esc(p)}">${esc(p)}</span><span class="t">${fmt(t)}</span>` +
+        `<button class="big-btn" data-skip="${esc(p)}">Skip</button></div>`).join("");
+      box.innerHTML = (rows ? `<h3>Biggest folders</h3>${rows}` : "") +
+        `<div class="big-fix"><button class="big-btn" data-fix="compress">Compress code</button>` +
+        `<button class="big-btn" data-fix="budget">Fit in 200k</button></div>`;
+    }
+    $("tooBig").onclick = (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.skip != null) {
+        const dir = b.dataset.skip;
+        for (const p of [...state.selected]) if (p.startsWith(dir)) state.selected.delete(p);
+        changed();
+        toast(`Skipped ${dir}`);
+      } else if (b.dataset.fix === "compress") {
+        $("compress").checked = true; savePrefs();
+        toast("Compress code is on. Pack to see the real size.");
+      } else if (b.dataset.fix === "budget") {
+        $("budget").value = "200k"; syncQuick(); savePrefs();
+        toast("Budget set to 200k. Pack keeps the most important files.");
+      }
+    };
 
     // ---------- tree ----------
     function buildTree() {
