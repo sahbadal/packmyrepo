@@ -74,6 +74,8 @@ packmyrepo undo                    # undo the last apply
 | Split a huge repo into several prompts                  | `packmyrepo --split 100k`                                          |
 | Get Markdown instead of XML                             | `packmyrepo -f md`                                                 |
 
+Too big for one prompt? packmyrepo shows the biggest folders and ready-to-run commands (`-c`, `--budget`, `--split`, or one folder). In `packmyrepo ui`, you can skip a big folder with one click.
+
 Run `packmyrepo help` for every option and `packmyrepo prompts` for the ready-made prompts
 (review, bugs, explain, docs, tests, refactor, feature, security).
 
@@ -177,13 +179,14 @@ Rules are applied in this order, all in `.gitignore` syntax: built-in defaults, 
 
 ## Troubleshooting
 
-| You see                               | What to do                                                                                                                                                        |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `no file blocks found in the answer`  | Copy the AI's code box that starts with `<file path=...>`, or the whole reply. If you copied only one file's code, use `packmyrepo apply --to path/to/that/file`. |
-| `would replace almost the whole file` | The clipboard probably holds something else. Copy the AI's answer again.                                                                                          |
-| `looks incomplete`                    | The AI shortened the file with `...`. Ask it for the complete file.                                                                                               |
-| An old version runs with `npx`        | Use `npx packmyrepo@latest`.                                                                                                                                      |
-| `path not found`                      | Check the spelling. To pack a GitHub repo, use its full link.                                                                                                     |
+| You see                                  | What to do                                                                                                                                                        |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no file blocks found in the answer`     | Copy the AI's code box that starts with `<file path=...>`, or the whole reply. If you copied only one file's code, use `packmyrepo apply --to path/to/that/file`. |
+| `would replace almost the whole file`    | The clipboard probably holds something else. Copy the AI's answer again.                                                                                          |
+| `looks incomplete`                       | The AI shortened the file with `...`. Ask it for the complete file.                                                                                               |
+| An old version runs with `npx`           | Use `npx packmyrepo@latest`.                                                                                                                                      |
+| `path not found`                         | Check the spelling. To pack a GitHub repo, use its full link.                                                                                                     |
+| `the package @packmyrepo/... is missing` | npx kept a broken copy in its cache. Delete the `_npx` folder in your npm cache (`npm config get cache` shows where), then run `npx packmyrepo@latest` again.     |
 
 ## Privacy
 

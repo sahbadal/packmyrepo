@@ -197,6 +197,7 @@ func baseName(p string) string {
 // defaultIgnores are always skipped (unless --no-default-ignore).
 var defaultIgnores = []string{
 	".git/", ".hg/", ".svn/", "node_modules/", "bower_components/",
+	"$RECYCLE.BIN/", "System Volume Information/",
 	".DS_Store", "Thumbs.db", "*.log", ".idea/", "*.swp", "*.swo",
 	"dist/", "coverage/", ".nyc_output/", ".cache/", ".packmyrepo/",
 	"*.min.js", "*.min.css", "*.map",
