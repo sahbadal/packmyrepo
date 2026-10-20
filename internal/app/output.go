@@ -293,7 +293,9 @@ func renderAll(base RenderInput, maxPart int) ([]string, int) {
 	// group files into chunks by token size
 	var groups [][]*File
 	var cur []*File
-	curTok := countTokens(tree) + 300
+	// every part repeats the tree, so every part starts with its cost
+	startTok := countTokens(tree) + 300
+	curTok := startTok
 	for _, f := range base.Files {
 		cost := f.Tokens + wrapperCost(f)
 		if f.Mode == ModeOmitted {
@@ -301,7 +303,7 @@ func renderAll(base RenderInput, maxPart int) ([]string, int) {
 		}
 		if len(cur) > 0 && curTok+cost > maxPart {
 			groups = append(groups, cur)
-			cur, curTok = nil, 300
+			cur, curTok = nil, startTok
 		}
 		cur = append(cur, f)
 		curTok += cost
